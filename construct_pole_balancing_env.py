@@ -142,12 +142,12 @@ class ConstructPoleBalancingEnv():
         if abs(self.pole_angle_buffer[-1])>abs(self.pole_angle_buffer[-2]):
             # returns a reward negative reward proportional to how farther away
             # the pole was diverted from being balanced
-            return -1*(abs(self.pole_angle_buffer[-1])/90)
+            return -1*(abs(self.pole_angle_buffer[-1])/45)
         # if the action made the pole closer to being balanced
         elif abs(self.pole_angle_buffer[-1])<abs(self.pole_angle_buffer[-2]):
             # returns a positive reward proportional to how closer it got the
             # pole being balanced
-            return (abs(self.pole_angle_buffer[-1])/90)
+            return (abs(self.pole_angle_buffer[-1])/45)
         # if the action didn't change the angle
         else:
             return 0
