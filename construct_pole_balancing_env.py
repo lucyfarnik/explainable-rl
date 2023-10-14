@@ -16,6 +16,8 @@ class ConstructPoleBalancingEnv():
     def __init__(
             self,
             cart_mass: float = 1.0, 
+            cart_length: float = 5,
+            cart_height: float = 5,
             pole_mass: float = 0.3, 
             gravity: float = 9.81, 
             friction: float = 0.0, 
@@ -50,7 +52,10 @@ class ConstructPoleBalancingEnv():
         """
         self.cart_mass=cart_mass
         self.pole_mass=pole_mass
+        self.cart_length=cart_length
+        self.cart_height=cart_height
         self.friction=friction
         self.gravity=gravity
         self.pole_length=pole_length
+        
         
