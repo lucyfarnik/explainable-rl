@@ -132,6 +132,25 @@ class ConstructPoleBalancingEnv():
                 self.__pole_angle_buffer,
                 self.__pole_velocity_buffer]
     
+    def return_reward(
+            self
+            ):
+        
+        # if the last observed angle of the pole is greater is than second to
+        # to last observed pole angle i.e. the RL agent caused the pole to 
+        # be farther away from being balanced
+        if abs(self.pole_angle_buffer[-1])>abs(self.pole_angle_buffer[-2]):
+            return -1
+        # if the action made the pole closer to being balanced
+        elif abs(self.pole_angle_buffer[-1])<abs(self.pole_angle_buffer[-2]):
+            return 1
+        # if the action didn't change the angle
+        else:
+            return 0
+        
+        
+    
+    
 
 
                 
