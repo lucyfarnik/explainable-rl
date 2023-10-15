@@ -18,7 +18,7 @@ class ConstructPoleBalancingEnv():
             cart_mass: float = 1.0, 
             cart_length: float = 5,
             cart_height: float = 5,
-            pole_mass: float = 0.3, 
+            pole_mass: float = 0.0, 
             gravity: float = 9.81, 
             friction: float = 0.0, 
             pole_length: float = 0.5, 
@@ -38,7 +38,7 @@ class ConstructPoleBalancingEnv():
             Default value is 1 kg
 
         pole_mass : float
-            default value is 0.3 kg
+            default to massless
         
         cart_length : float
         
