@@ -10,8 +10,13 @@ the RL agent to interact with. The following methods are included:
 
 @author: hn23952
 """
+import math 
 
 class ConstructPoleBalancingEnv():
+    
+    # assume that this a reasonable time frame for the agent to act and the env
+    # need to update
+    time_delta=0.1
     
     def __init__(
             self,
@@ -38,7 +43,6 @@ class ConstructPoleBalancingEnv():
             Default value is 1 kg
 
         pole_mass : float
-            default to massless
         
         cart_length : float
         
@@ -132,6 +136,16 @@ class ConstructPoleBalancingEnv():
                 self.__pole_angle_buffer,
                 self.__pole_velocity_buffer]
     
+    def view_buffer(self)-> [list, list, list, list]:
+        
+        print("the cart position buffer = ", self.__cart_position_buffer)
+        print("The cart velocity buffer = ", self.__cart_velocity_buffer)
+        print("The pole angle buffer = ", self.__pole_angle_buffer)
+        print("The pole velocity buffer = ", self.__pole_velocity_buffer)
+        
+        return [self.__cart_position_buffer, self.__cart_velocity_buffer, 
+                self.__pole_angle_buffer, self.__pole_velocity_buffer]
+    
     def return_reward(
             self
             ):
@@ -153,7 +167,35 @@ class ConstructPoleBalancingEnv():
             return 0
         
         
-    
+    def state_transition(
+            self,
+            agent_action
+            ):
+        # update the cart's state as per the agent's action (Force on cart)
+        friction_force=self.friction*self.cart_velocity
+        cart_acceleration=(agent_action-friction_force)/self.cart_mass
+        self.cart_x_position=self.cart_x_position+(self.cart_velocity*self.time_delta)
+        self.cart_velocity=self.cart_velocity+(cart_acceleration*self.time_delta)
+        
+        # update the pole's state
+        pole_angular_acceleration=(self.gravity/self.pole_length)*math.sin(self.pole_angle)
+        self.pole_angle=self.pole_angle+(pole_angular_acceleration*self.time_delta)
+        self.pole_velocity=self.pole_velocity+(pole_angular_acceleration*self.time_delta)
+        
+        # update the buffers with the new state
+        self.update_buffer(cart_position=self.cart_x_position, 
+                           cart_velocity=self.cart_velocity,
+                           pole_angle=self.pole_angle,
+                           pole_velocity=self.pole_velocity
+                           )
+        
+        return {"cart position": self.cart_x_position, 
+                "cart velocity": self.cart_velocity, 
+                "pole angle": self.pole_angle, 
+                "pole velocity": self.pole_velocity
+                }
+        
+        
     
 
 
