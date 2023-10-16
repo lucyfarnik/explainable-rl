@@ -30,7 +30,9 @@ class ConstructPoleBalancingEnv():
             cart_x_position: float = 0, 
             cart_velocity: float = 0, 
             pole_angle: int = 0, 
-            pole_velocity: float = 0, 
+            pole_velocity: float = 0,
+            max_iter: int = 100,
+            iteration: int =0,
             
             )->None:
         """
@@ -91,8 +93,9 @@ class ConstructPoleBalancingEnv():
         self.__cart_velocity_buffer=[cart_velocity]
         self.__pole_angle_buffer=[pole_angle]
         self. __pole_velocity_buffer=[pole_velocity]
+        self.max_iter=max_iter
+        self.iteration=iteration
         
-
     def update_buffer(
             self,
             cart_position: float, 
@@ -148,29 +151,43 @@ class ConstructPoleBalancingEnv():
     
     def return_reward(
             self
-            ):
+            )->float:
         
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to 
         # be farther away from being balanced. Regardless of the direction
-        if abs(self.pole_angle_buffer[-1])>abs(self.pole_angle_buffer[-2]):
+        if abs(self.__pole_angle_buffer[-1])>abs(self.__pole_angle_buffer[-2]):
             # returns a reward negative reward proportional to how farther away
             # the pole was diverted from being balanced
-            return -1*(abs(self.pole_angle_buffer[-1])/45)
+            return -1*(abs(self.__pole_angle_buffer[-1])/45)
         # if the action made the pole closer to being balanced
-        elif abs(self.pole_angle_buffer[-1])<abs(self.pole_angle_buffer[-2]):
+        elif abs(self.__pole_angle_buffer[-1])<abs(self.__pole_angle_buffer[-2]):
             # returns a positive reward proportional to how closer it got the
             # pole being balanced
-            return (abs(self.pole_angle_buffer[-1])/45)
+            return (abs(self.__pole_angle_buffer[-1])/45)
         # if the action didn't change the angle
         else:
-            return 0
+            return 0.0
         
         
     def state_transition(
             self,
             agent_action
             ):
+        """
+        positive agent action is a force to the right.
+
+        Parameters
+        ----------
+        agent_action : float
+            force applied by the agent on the cart .
+
+        Returns
+        -------
+        dict
+            dictionary with the current state observation for the env.
+
+        """
         # update the cart's state as per the agent's action (Force on cart)
         friction_force=self.friction*self.cart_velocity
         cart_acceleration=(agent_action-friction_force)/self.cart_mass
@@ -188,17 +205,22 @@ class ConstructPoleBalancingEnv():
                            pole_angle=self.pole_angle,
                            pole_velocity=self.pole_velocity
                            )
+        # increment the current iteration 
+        self.iteration+=1
         
-        return {"cart position": self.cart_x_position, 
-                "cart velocity": self.cart_velocity, 
-                "pole angle": self.pole_angle, 
-                "pole velocity": self.pole_velocity
+        return {"cart_position": self.cart_x_position, 
+                "cart_velocity": self.cart_velocity, 
+                "pole_angle": self.pole_angle, 
+                "pole_velocity": self.pole_velocity
                 }
-        
-        
     
-
-
-                
-
+    def termination_status(self)->bool:
+        if (
+                self.__pole_angle_buffer[-1]>=90 or
+                self.__pole_angle_buffer[-1]<=-90 or
+                self.iteration>=self.max_iter
+                ):
+            return 1
+        else:
+            return -1
         
