@@ -109,7 +109,8 @@ class ConstructPoleBalancingEnv():
         self.__cart_position_buffer=[cart_x_position]
         self.__cart_velocity_buffer=[cart_velocity]
         self.__pole_angle_buffer=[pole_angle]
-        self. __pole_velocity_buffer=[pole_velocity]
+        self.__pole_velocity_buffer=[pole_velocity],
+        self.__agent_action_buffer=[]
         self.max_iter=max_iter
         self.iteration=iteration
         
@@ -118,8 +119,9 @@ class ConstructPoleBalancingEnv():
             cart_position: float, 
             cart_velocity: float, 
             pole_angle: int, 
-            pole_velocity: float
-            )->[list, list, list, list]:
+            pole_velocity: float,
+            agent_action: float
+            )->[list, list, list, list, list]:
         """
         A method to update the buffers with new space state of the enviroment
         The buffers could be used to use the observation at the previous 
@@ -140,7 +142,7 @@ class ConstructPoleBalancingEnv():
         Returns
         -------
         [list, list, list, list]
-            [cart_position_buffer, cart_velocity_buffer, pole_angle_buffer, pole_velocity_buffer].
+            [cart_position_buffer, cart_velocity_buffer, pole_angle_buffer, pole_velocity_buffer, agent_action_buffer].
 
         """
         # update private variables using this method. The variables are made
@@ -149,14 +151,16 @@ class ConstructPoleBalancingEnv():
         self.__cart_velocity_buffer.append(cart_velocity)
         self.__pole_angle_buffer.append(pole_angle)
         self.__pole_velocity_buffer.append(pole_velocity)
+        self.__agent_action_buffer.append(agent_action)
         
         
         return [self.__cart_position_buffer,
                 self.__cart_velocity_buffer, 
                 self.__pole_angle_buffer,
-                self.__pole_velocity_buffer]
+                self.__pole_velocity_buffer, 
+                self.__agent_action_buffer]
     
-    def view_buffer(self)-> [list, list, list, list]:
+    def view_buffer(self)-> [list, list, list, list, list]:
         """
         Method to help print and return the private buffers of state
 
@@ -172,9 +176,12 @@ class ConstructPoleBalancingEnv():
         print("The cart velocity buffer = ", self.__cart_velocity_buffer)
         print("The pole angle buffer = ", self.__pole_angle_buffer)
         print("The pole velocity buffer = ", self.__pole_velocity_buffer)
+        print("the agent action buffer = ", self.__agent_action_buffer)
+        
         
         return [self.__cart_position_buffer, self.__cart_velocity_buffer, 
-                self.__pole_angle_buffer, self.__pole_velocity_buffer]
+                self.__pole_angle_buffer, self.__pole_velocity_buffer, 
+                self.__agent_action_buffer]
     
     def return_reward(
             self
