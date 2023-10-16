@@ -13,7 +13,18 @@ the RL agent to interact with. The following methods are included:
 import math 
 
 class ConstructPoleBalancingEnv():
+    """
+    Construtor function to create the environment for the RL task for pole-cart
+    problem. 
     
+    - Initialise object by calling ConstructPoleBalancingEnv()
+    while training:
+        - state_transition(agent_action)
+        - update_buffer()
+        - return_reward()
+        - termination_status()
+    
+    """
     # assume that this a reasonable time frame for the agent to act and the env
     # need to update
     time_delta=0.1
@@ -71,6 +82,12 @@ class ConstructPoleBalancingEnv():
         
         pole_velocity : float
             defaults to stationary
+            
+        max_iter : int
+            default to 100 iterations
+            
+        iterations: int
+            starts as 0 and increments with each time state_transition is called
 
 
         Returns
@@ -140,7 +157,17 @@ class ConstructPoleBalancingEnv():
                 self.__pole_velocity_buffer]
     
     def view_buffer(self)-> [list, list, list, list]:
-        
+        """
+        Method to help print and return the private buffers of state
+
+        Returns
+        -------
+        [self.__cart_position_buffer, self.__cart_velocity_buffer, 
+         self.__pole_angle_buffer, self.__pole_velocity_buffer]
+            Buffer list of each of the observations of the four variables 
+            representing the state at each timestep
+
+        """
         print("the cart position buffer = ", self.__cart_position_buffer)
         print("The cart velocity buffer = ", self.__cart_velocity_buffer)
         print("The pole angle buffer = ", self.__pole_angle_buffer)
@@ -172,7 +199,7 @@ class ConstructPoleBalancingEnv():
         
     def state_transition(
             self,
-            agent_action
+            agent_action: float
             ):
         """
         positive agent action is a force to the right.
@@ -215,6 +242,16 @@ class ConstructPoleBalancingEnv():
                 }
     
     def termination_status(self)->bool:
+        """
+        terminate if the pole is at 90 degree angle with the y-axis from either
+        side or if the max iteration is reached
+
+        Returns
+        -------
+        bool
+            1 means terminate and -1 is do not terminate.
+
+        """
         if (
                 self.__pole_angle_buffer[-1]>=90 or
                 self.__pole_angle_buffer[-1]<=-90 or
