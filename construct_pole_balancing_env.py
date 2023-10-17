@@ -44,6 +44,7 @@ class ConstructPoleBalancingEnv():
             pole_velocity: float = 0,
             max_iter: int = 100,
             iteration: int =0,
+            agent_action_bound: int = None
             
             )->None:
         """
@@ -113,6 +114,7 @@ class ConstructPoleBalancingEnv():
         self.__agent_action_buffer=[]
         self.max_iter=max_iter
         self.iteration=iteration
+        self.agent_action_bound=agent_action_bound
         
     def update_buffer(
             self,
@@ -138,6 +140,7 @@ class ConstructPoleBalancingEnv():
             DESCRIPTION.
         pole_velocity : float
             DESCRIPTION.
+        agent_action: float
 
         Returns
         -------
@@ -184,9 +187,13 @@ class ConstructPoleBalancingEnv():
                 self.__agent_action_buffer]
     
     def return_reward(
-            self
+            self, 
+            agent_action: float
             )->float:
-        
+        # validate agent's action w.r.t the defined boundary
+        if self.agent_action_boundary is not None and agent_action>=self.agent_action_bound:
+            print("agent action exceeds bound and severe penalty is applied")
+            return -10.0
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to 
         # be farther away from being balanced. Regardless of the direction
@@ -264,7 +271,9 @@ class ConstructPoleBalancingEnv():
                 self.__pole_angle_buffer[-1]<=-90 or
                 self.iteration>=self.max_iter
                 ):
+            print("Problem cannot be solved anymore or maximum iteration reached")
             return 1
         else:
+            
             return -1
         
