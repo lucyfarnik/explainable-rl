@@ -44,7 +44,8 @@ class ConstructPoleBalancingEnv():
             pole_velocity: float = 0,
             max_iter: int = 100,
             iteration: int =0,
-            agent_action_bound: int = None
+            agent_action_bound: int = None, 
+            maximum_buffer_size: int = 1000,
             
             )->None:
         """
@@ -107,6 +108,8 @@ class ConstructPoleBalancingEnv():
         self.cart_velocity=cart_velocity
         self.pole_angle=pole_angle
         self.pole_velocity=pole_velocity
+        #the buffer are private to ensure they are not corrupted outside the 
+        # class by mistake 
         self.__cart_position_buffer=[cart_x_position]
         self.__cart_velocity_buffer=[cart_velocity]
         self.__pole_angle_buffer=[pole_angle]
@@ -115,6 +118,7 @@ class ConstructPoleBalancingEnv():
         self.max_iter=max_iter
         self.iteration=iteration
         self.agent_action_bound=agent_action_bound
+        self.maximum_buffer_size=maximum_buffer_size
         
     def update_buffer(
             self,
@@ -148,8 +152,17 @@ class ConstructPoleBalancingEnv():
             [cart_position_buffer, cart_velocity_buffer, pole_angle_buffer, pole_velocity_buffer, agent_action_buffer].
 
         """
-        # update private variables using this method. The variables are made
-        # private to ensure they are not corrupted outside the class by mistake 
+        # check the length of one buffer only w.r.t the size limit is enough 
+        # since they all update simulatenously and would have the same length
+        if len(self.__cart_position_buffer)==self.maximum_buffer_size:
+            # remove the first state in the buffers to update with the new state
+            self.__cart_position_buffer=self.__cart_position_buffer[1:]
+            self.__cart_velocity_buffer=self.__cart_velocity_buffer[1:]
+            self.__pole_angle_buffer=self.__pole_angle_buffer[1:]
+            self.__pole_velocity_buffer=self.__pole_velocity_buffer[1:]
+            self.__agent_action_buffer=self.__agent_action_buffer[1:]
+            
+        # update private variables using this method. 
         self.__cart_position_buffer.append(cart_position)
         self.__cart_velocity_buffer.append(cart_velocity)
         self.__pole_angle_buffer.append(pole_angle)
