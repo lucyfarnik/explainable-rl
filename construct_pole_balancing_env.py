@@ -113,12 +113,13 @@ class ConstructPoleBalancingEnv():
         self.__cart_position_buffer=[cart_x_position]
         self.__cart_velocity_buffer=[cart_velocity]
         self.__pole_angle_buffer=[pole_angle]
-        self.__pole_velocity_buffer=[pole_velocity],
+        self.__pole_velocity_buffer=[pole_velocity]
         self.__agent_action_buffer=[]
         self.max_iter=max_iter
         self.iteration=iteration
         self.agent_action_bound=agent_action_bound
         self.maximum_buffer_size=maximum_buffer_size
+        self.agent_action_boundary=agent_action_bound
         
     def update_buffer(
             self,
@@ -257,7 +258,8 @@ class ConstructPoleBalancingEnv():
         self.update_buffer(cart_position=self.cart_x_position, 
                            cart_velocity=self.cart_velocity,
                            pole_angle=self.pole_angle,
-                           pole_velocity=self.pole_velocity
+                           pole_velocity=self.pole_velocity, 
+                           agent_action=agent_action
                            )
         # increment the current iteration 
         self.iteration+=1
@@ -289,4 +291,19 @@ class ConstructPoleBalancingEnv():
         else:
             
             return -1
+        
+    def step(self, agent_action):
+        """
+            Call to construct the environment and observe states without
+            having to call each method on its own in your script
+        """
+        # first get the new env observation
+        observation=self.state_transition(agent_action)["cart_position"]
+        # compute the reward
+        reward=self.return_reward(agent_action)
+        termination=self.termination_status()
+        return [observation, reward, termination]
+        
+        
+        
         
