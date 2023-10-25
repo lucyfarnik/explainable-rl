@@ -100,6 +100,49 @@ def get_advantages(buffer: ReplayBuffer, agent: Agent,
     
     return advantages
 
+def compute_loss(probs_hat: T.Tensor,
+                 vals_hat: T.Tensor,
+                 mb_actions: T.Tensor,
+                 mb_act_prob: T.Tensor,
+                 mb_advantages: T.Tensor,
+                 mb_returns: T.Tensor,
+                 clip_eps: float = 0.2,
+                 critic_loss_coef: float = 0.5,
+                 entropy_loss_coef: float = 0.01) -> T.Tensor:
+    """
+        Compute the PPO loss
+
+        Args:
+            probs_hat (T.Tensor): action probabilities predicted by the actor
+            vals_hat (T.Tensor): values predicted by the critic
+            mb_actions (T.Tensor): actions taken in the minibatch
+            mb_act_prob (T.Tensor): action probabilities of the actions taken
+            mb_advantages (T.Tensor): empirical advantages
+            mb_returns (T.Tensor): empirical returns
+            clip_eps (float): PPO clipping parameter
+            critic_loss_coef (float): how much to weight the critic loss
+            entropy_loss_coef (float): how much to weight the entropy bonus
+    """
+    # compute policy ratios between the current policy and the old policy
+    ratios = probs_hat[mb_actions] / mb_act_prob
+
+    # clipped surrogate loss from the PPO paper
+    actor_loss1 = ratios * mb_advantages
+    actor_loss2 = T.clamp(ratios, min=1-clip_eps, max=1+clip_eps) * mb_advantages
+    actor_loss = T.min(actor_loss1, actor_loss2).mean()
+
+    # MSE between the vals our critic just returned and the empirical returns
+    critic_loss = ((vals_hat[mb_actions] - mb_returns)**2).mean()
+
+    # low entropy bonus (regularization)
+    entropy_loss = (probs_hat * T.log(probs_hat)).sum(-1).mean()
+
+    # total loss
+    loss = -actor_loss + critic_loss_coef * critic_loss \
+        - entropy_loss_coef * entropy_loss
+
+    return loss
+
 def train_agent(
         env: gym.Env,
         discount = 0.99,
@@ -136,11 +179,13 @@ def train_agent(
             critic_loss_coef (float): how much to weight the critic loss
             entropy_loss_coef (float): how much to weight the entropy bonus
 
+        Returns:
+            Agent: the trained agent
     """
 
+    # initialize the agent, optimizer, and replay buffer
     agent = Agent(d_obs, d_act, hidden_dims)
     optimizer = optim.Adam(agent.parameters(), lr=lr)
-
     buffer = ReplayBuffer(batch_size, d_obs, d_act)
 
     n_episodes = n_timesteps // batch_size
@@ -148,7 +193,7 @@ def train_agent(
         # fill the buffer with a batch of trajectory data
         buffer.fill_with_samples(env, agent)
             
-        # estimate the empirical advantages using GAE
+        # estimate the empirical advantages and returns using GAE
         advantages = get_advantages(buffer, agent, discount, gae_lambda)
         returns = advantages + buffer.val
 
@@ -159,30 +204,21 @@ def train_agent(
             for start in range(0, batch_size, mini_batch_size): # minibatch loop
                 end = start + mini_batch_size
                 mb_indices = batch_indices[start:end]
+
+                # get the minibatch data
+                mb_obs = buffer.obs[mb_indices]
                 mb_actions = buffer.act[mb_indices]
+                mb_act_prob = buffer.act_prob[mb_indices]
                 mb_advantages = advantages[mb_indices]
+                mb_returns = returns[mb_indices]
 
                 # run the actor and critic on the minibatch
-                new_probs, new_vals = agent(buffer.obs[mb_indices])
+                probs_hat, vals_hat = agent(mb_obs)
 
-                # compute policy ratios between the current policy and the old policy
-                ratios = new_probs[mb_actions] / buffer.act_prob[mb_indices]
-
-                # clipped surrogate loss from the PPO paper
-                actor_loss1 = ratios * mb_advantages
-                actor_loss2 = T.clamp(ratios, min=1-clip_eps, max=1+clip_eps) \
-                                    * mb_advantages
-                actor_loss = T.min(actor_loss1, actor_loss2).mean()
-
-                # MSE between the vals our critic just returned and the empirical returns
-                critic_loss = ((new_vals[mb_actions] - returns[mb_indices])**2).mean()
-
-                # low entropy bonus (regularization)
-                entropy_loss = (new_probs * T.log(new_probs)).sum(-1).mean()
-
-                # total loss
-                loss = -actor_loss + critic_loss_coef * critic_loss \
-                            - entropy_loss_coef * entropy_loss
+                # compute the loss
+                loss = compute_loss(probs_hat, vals_hat, mb_actions, mb_act_prob,
+                                    mb_advantages, mb_returns, clip_eps,
+                                    critic_loss_coef, entropy_loss_coef)
 
                 # update step
                 optimizer.zero_grad()
