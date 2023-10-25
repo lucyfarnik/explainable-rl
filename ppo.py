@@ -5,22 +5,25 @@ import torch.nn.functional as F
 import torch.optim as optim
 import gym
 
+# TODO: TEST EVERYTHING
 # TODO: make this all work with non-gym envs
-# TODO: modify to work with continuous envs?
-# TODO: let the user specify more than 2 hidden layers
 
 class Agent(nn.Module):
     def __init__(self, d_obs: int, d_act: int, hidden_dims: list[int]) -> None:
         super().__init__()
 
-        assert len(hidden_dims) == 2, "Only 2 hidden layers are currently supported"
+        # create the shared network (common to both actor and critic)
+        layers = []
+        for i, hidden_dim in enumerate(hidden_dims):
+            if i == 0:
+                layers.append(nn.Linear(d_obs, hidden_dim))
+            else:
+                layers.append(nn.Linear(hidden_dims[i-1], hidden_dim))
+            layers.append(nn.ReLU())
+        self.network = nn.Sequential(*layers)
 
-        self.network = nn.Sequential(
-            nn.Linear(d_obs, hidden_dims[0]),
-            nn.ReLU(),
-            nn.Linear(hidden_dims[0], hidden_dims[1]),
-            nn.ReLU()
-        )
+        # the actor and critic are just affine transformations of the
+        # shared network's outputs
         self.actor = nn.Linear(hidden_dims[1], d_act)
         self.critic = nn.Linear(hidden_dims[1], 1)
     
