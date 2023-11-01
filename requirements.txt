@@ -3,6 +3,4 @@ torch
 gymnasium
 wandb
 jaxtyping
-pyplot
-matplotlib
 streamlit
