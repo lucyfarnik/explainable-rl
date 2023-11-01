@@ -1,0 +1,7 @@
+numpy
+torch
+gymnasium
+wandb
+jaxtyping
+streamlit
+moviepy
