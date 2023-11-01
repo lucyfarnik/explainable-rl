@@ -1,15 +1,15 @@
 import numpy as np
 import torch as T
+from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import gym
-
-# TODO: TEST EVERYTHING
-# TODO: make this all work with non-gym envs
+import wandb
+from jaxtyping import Float
 
 class Agent(nn.Module):
-    def __init__(self, d_obs: int, d_act: int, hidden_dims: list[int]) -> None:
+    def __init__(self, d_obs: int, n_act: int, hidden_dims: list[int]) -> None:
         super().__init__()
 
         # create the shared network (common to both actor and critic)
@@ -24,34 +24,37 @@ class Agent(nn.Module):
 
         # the actor and critic are just affine transformations of the
         # shared network's outputs
-        self.actor = nn.Linear(hidden_dims[1], d_act)
-        self.critic = nn.Linear(hidden_dims[1], 1)
+        self.actor = nn.Linear(hidden_dims[1], n_act) # outputs logits corresponding to Q-values
+        self.critic = nn.Linear(hidden_dims[1], 1) # outputs the value of the state
     
-    def get_value(self, x: T.Tensor) -> T.Tensor:
+    def get_value(self, x: Float[Tensor, "batch d_obs"]) -> Float[Tensor, "batch"]:
+        # return just the value of the state
         return self.critic(self.network(x))
     
-    def forward(self, x: T.Tensor) -> T.Tensor:
+    def forward(self, x: Float[Tensor, "batch d_obs"]
+                ) -> tuple[Float[Tensor, "batch n_act"], Float[Tensor, "batch"]]:
+        # return the action probabilities and the value of the state
         hidden = self.network(x)
         logits = self.actor(hidden)
         probs = F.softmax(logits, dim=-1)
         return probs, self.critic(hidden)
 
 class ReplayBuffer():
-    def __init__(self, size: int, d_obs: int, d_act: int) -> None:
+    def __init__(self, size: int, d_obs: int) -> None:
         self.size = size
         self.obs = T.zeros((size, d_obs))
-        self.act = T.zeros((size, d_act)) #! FIXME this is assuming continuous actions
+        self.act = T.zeros(size, dtype=T.int)
         self.rew = T.zeros(size)
         self.val = T.zeros(size)
         self.act_prob = T.zeros(size)
-        self.dones = T.zeros(size)
+        self.dones = T.zeros(size, dtype=T.int)
 
     def fill_with_samples(self, env: gym.Env, agent: Agent):
         """
             Fill the buffer with a batch of trajectory data
         """
         with T.no_grad():
-            obs = T.tensor(env.reset())
+            obs = T.tensor(env.reset()[0])
             done = T.zeros(1)
             for step in range(self.size):
                 self.obs[step] = obs
@@ -65,15 +68,17 @@ class ReplayBuffer():
                 self.act_prob[step] = action_probs.squeeze()[action]
 
                 # take a step in the env
-                obs, rew, done, _ = env.step(action)
+                obs, rew, done, _, _ = env.step(action.item())
+                obs = T.tensor(obs)
                 self.rew[step] = rew
 
+                # reset the env if we're done
                 if done:
-                    obs = T.tensor(env.reset())
+                    obs = T.tensor(env.reset()[0])
                     done = T.zeros(1)
 
 def get_advantages(buffer: ReplayBuffer, agent: Agent,
-                   discount: float, gae_lambda: float) -> T.Tensor:
+                   discount: float, gae_lambda: float) -> Float[Tensor, "batch"]:
     """
         Estimate the empirical advantages using GAE
     """
@@ -82,7 +87,7 @@ def get_advantages(buffer: ReplayBuffer, agent: Agent,
         advantages = T.zeros(buffer.size)
         # bootstrap the value of the last state
         if buffer.dones[-1] == 0: # last state was not terminal
-            next_value = agent.get_value(buffer.obs[-1])[buffer.act[-1]]
+            next_value = agent.get_value(buffer.obs[-1])
         else: # last state was terminal
             next_value = 0
         
@@ -100,31 +105,31 @@ def get_advantages(buffer: ReplayBuffer, agent: Agent,
     
     return advantages
 
-def compute_loss(probs_hat: T.Tensor,
-                 vals_hat: T.Tensor,
-                 mb_actions: T.Tensor,
-                 mb_act_prob: T.Tensor,
-                 mb_advantages: T.Tensor,
-                 mb_returns: T.Tensor,
+def compute_loss(probs_hat: Float[Tensor, "batch n_act"],
+                 vals_hat: Float[Tensor, "batch"],
+                 mb_actions: Float[Tensor, "batch"],
+                 mb_act_prob: Float[Tensor, "batch"],
+                 mb_advantages: Float[Tensor, "batch"],
+                 mb_returns: Float[Tensor, "batch"],
                  clip_eps: float = 0.2,
                  critic_loss_coef: float = 0.5,
-                 entropy_loss_coef: float = 0.01) -> T.Tensor:
+                 entropy_loss_coef: float = 0.01) -> Float[Tensor, ""]:
     """
         Compute the PPO loss
 
         Args:
-            probs_hat (T.Tensor): action probabilities predicted by the actor
-            vals_hat (T.Tensor): values predicted by the critic
-            mb_actions (T.Tensor): actions taken in the minibatch
-            mb_act_prob (T.Tensor): action probabilities of the actions taken
-            mb_advantages (T.Tensor): empirical advantages
-            mb_returns (T.Tensor): empirical returns
+            probs_hat (Tensor): action probabilities predicted by the actor
+            vals_hat (Tensor): values predicted by the critic
+            mb_actions (Tensor): actions taken in the minibatch
+            mb_act_prob (Tensor): action probabilities of the actions taken
+            mb_advantages (Tensor): empirical advantages
+            mb_returns (Tensor): empirical returns
             clip_eps (float): PPO clipping parameter
             critic_loss_coef (float): how much to weight the critic loss
             entropy_loss_coef (float): how much to weight the entropy bonus
     """
     # compute policy ratios between the current policy and the old policy
-    ratios = probs_hat[mb_actions] / mb_act_prob
+    ratios = probs_hat[T.arange(probs_hat.size(0)), mb_actions] / mb_act_prob
 
     # clipped surrogate loss from the PPO paper
     actor_loss1 = ratios * mb_advantages
@@ -147,7 +152,7 @@ def train_agent(
         env: gym.Env,
         discount = 0.99,
         d_obs = 4,
-        d_act = 2,
+        n_act = 2,
         hidden_dims = [64, 64],
         batch_size = 512,
         mini_batch_size = 64,
@@ -166,7 +171,7 @@ def train_agent(
             env (gym.Env): the environment to train on
             discount (float): discount factor
             d_obs (int): observation dimension
-            d_act (int): action dimension
+            n_act (int): number of actions (assumes discrete actions)
             hidden_dims (list[int]): hidden layer dimensions
             batch_size (int): how many steps to collect before updating
             mini_batch_size (int): how many samples to use in each update
@@ -184,9 +189,29 @@ def train_agent(
     """
 
     # initialize the agent, optimizer, and replay buffer
-    agent = Agent(d_obs, d_act, hidden_dims)
+    agent = Agent(d_obs, n_act, hidden_dims)
     optimizer = optim.Adam(agent.parameters(), lr=lr)
-    buffer = ReplayBuffer(batch_size, d_obs, d_act)
+    buffer = ReplayBuffer(batch_size, d_obs)
+
+    # initialize wandb
+    run = wandb.init(
+        project="explainable-rl-iai",
+        config={
+            "discount": discount,
+            "d_obs": d_obs,
+            "n_act": n_act,
+            "hidden_dims": hidden_dims,
+            "batch_size": batch_size,
+            "mini_batch_size": mini_batch_size,
+            "lr": lr,
+            "n_timesteps": n_timesteps,
+            "n_epochs_per_episode": n_epochs_per_episode,
+            "gae_lambda": gae_lambda,
+            "clip_eps": clip_eps,
+            "critic_loss_coef": critic_loss_coef,
+            "entropy_loss_coef": entropy_loss_coef, 
+        },
+    )
 
     n_episodes = n_timesteps // batch_size
     for _ in range(n_episodes): # episode loop
@@ -219,6 +244,9 @@ def train_agent(
                 loss = compute_loss(probs_hat, vals_hat, mb_actions, mb_act_prob,
                                     mb_advantages, mb_returns, clip_eps,
                                     critic_loss_coef, entropy_loss_coef)
+                
+                # log the loss
+                wandb.log({"loss": loss.item()})
 
                 # update step
                 optimizer.zero_grad()
@@ -228,4 +256,5 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    train_agent()
+    env = gym.make('CartPole-v1')
+    train_agent(env)
