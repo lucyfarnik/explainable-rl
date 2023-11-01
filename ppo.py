@@ -24,8 +24,8 @@ class Agent(nn.Module):
 
         # the actor and critic are just affine transformations of the
         # shared network's outputs
-        self.actor = nn.Linear(hidden_dims[1], n_act) # outputs logits corresponding to Q-values
-        self.critic = nn.Linear(hidden_dims[1], 1) # outputs the value of the state
+        self.actor = nn.Linear(hidden_dims[-1], n_act) # outputs logits corresponding to Q-values
+        self.critic = nn.Linear(hidden_dims[-1], 1) # outputs the value of the state
     
     def get_value(self, x: Float[Tensor, "batch d_obs"]) -> Float[Tensor, "batch"]:
         # return just the value of the state
@@ -174,7 +174,7 @@ def train_agent(
         discount = 0.99,
         d_obs = 4,
         n_act = 2,
-        hidden_dims = [64, 64],
+        hidden_dims = [64, 128, 32],
         batch_size = 2048,
         mini_batch_size = 128,
         lr = 0.001,
@@ -248,7 +248,7 @@ def train_agent(
             "avg_episode_length": batch_size / max(1, buffer.dones.sum().item()),
             "avg_episode_reward": buffer.rew.mean(dtype=T.float).item(),
         })
-            
+        
         # estimate the empirical advantages and returns using GAE
         advantages = get_advantages(buffer, agent, discount, gae_lambda)
         returns = advantages + buffer.val
