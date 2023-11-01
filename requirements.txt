@@ -2,6 +2,7 @@ gymnasium
 jaxtyping
 mazelib
 minigrid
+moviepy
 numpy
 streamlit
 torch
