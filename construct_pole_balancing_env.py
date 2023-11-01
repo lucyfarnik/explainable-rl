@@ -184,7 +184,6 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
                 self.state[2]<=-90 or
                 self.iteration>=self.max_iter
                 ):
-            print("Problem cannot be solved anymore or maximum iteration reached")
             return 1
         else:
             

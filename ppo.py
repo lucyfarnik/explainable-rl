@@ -8,6 +8,8 @@ import gymnasium as gym
 import wandb
 from jaxtyping import Float
 
+from construct_pole_balancing_env import ConstructPoleBalancingEnv
+
 class Agent(nn.Module):
     def __init__(self, d_obs: int, n_act: int, hidden_dims: list[int]) -> None:
         super().__init__()
@@ -288,7 +290,8 @@ def train_agent(
 if __name__ == '__main__':
     include_visuals_in_wandb = False
 
-    env = gym.make('CartPole-v1', render_mode='rgb_array' if include_visuals_in_wandb else None)
+    # env = gym.make('CartPole-v1', render_mode='rgb_array' if include_visuals_in_wandb else None)
+    env=ConstructPoleBalancingEnv()
     if include_visuals_in_wandb:
         env = gym.wrappers.RecordVideo(env, "./videos")
     train_agent(env,
