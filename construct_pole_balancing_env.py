@@ -199,7 +199,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         # compute the reward
         reward=self.return_reward(agent_action)
         termination=self.termination_status()
-        return [observation, reward, termination]
+        return observation, reward, termination, False, dict()
         
         
         
