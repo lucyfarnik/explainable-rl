@@ -95,7 +95,6 @@ def get_advantages(buffer: ReplayBuffer, agent: Agent,
         else: # last state was terminal
             next_value = 0
         
-        # TODO vectorize this for loop to make GPU go brrr
         for t in reversed(range(buffer.size)):
             # loop in reverse order, compute TD and then compute advantages "recursively"
             td_error = buffer.rew[t] + discount * next_value * (1 - buffer.dones[t]) \
@@ -185,6 +184,7 @@ def train_agent(
         critic_loss_coef = 0.01,
         entropy_loss_coef = 0.1,
         entropy_eps: float = 1e-6,
+        monitor_gym: bool = True,
     ) -> Agent:
     """
         Train an agent using PPO
@@ -206,6 +206,7 @@ def train_agent(
             critic_loss_coef (float): how much to weight the critic loss
             entropy_loss_coef (float): how much to weight the entropy bonus
             entropy_eps (float): small constant to prevent log(0) errors in the entropy loss
+            monitor_gym (bool): whether to monitor the gym environment with wandb
 
         Returns:
             Agent: the trained agent
@@ -235,7 +236,7 @@ def train_agent(
             "entropy_loss_coef": entropy_loss_coef, 
             "entropy_eps": entropy_eps,
         },
-        monitor_gym=True,
+        monitor_gym=monitor_gym,
     )
 
     n_episodes = n_timesteps // batch_size
@@ -247,6 +248,7 @@ def train_agent(
         wandb.log({
             "avg_episode_length": batch_size / max(1, buffer.dones.sum().item()),
             "avg_episode_reward": buffer.rew.mean(dtype=T.float).item(),
+            "avg_action": buffer.act.float().mean().item(),
         })
         
         # estimate the empirical advantages and returns using GAE
@@ -285,6 +287,9 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    env = gym.make('CartPole-v1', render_mode='rgb_array')
-    env = gym.wrappers.RecordVideo(env, "./videos")
-    train_agent(env)
+    include_visuals_in_wandb = False
+
+    env = gym.make('CartPole-v1', render_mode='rgb_array' if include_visuals_in_wandb else None)
+    if include_visuals_in_wandb:
+        env = gym.wrappers.RecordVideo(env, "./videos")
+    train_agent(env, monitor_gym=include_visuals_in_wandb)
