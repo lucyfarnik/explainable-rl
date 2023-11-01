@@ -4,7 +4,7 @@ from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import gym
+import gymnasium as gym
 import wandb
 from jaxtyping import Float
 
@@ -55,7 +55,7 @@ class ReplayBuffer():
         """
         with T.no_grad():
             obs = T.tensor(env.reset()[0])
-            done = T.zeros(1)
+            done = 0
             for step in range(self.size):
                 self.obs[step] = obs
                 self.dones[step] = done
@@ -63,6 +63,10 @@ class ReplayBuffer():
                 # given the observation, figure out what the agent should do
                 action_probs, values = agent(obs)
                 self.val[step] = values.squeeze()
+                
+                if T.isnan(action_probs).any() or T.isinf(action_probs).any():
+                    raise ValueError("action probabilities are NaN")
+
                 action = T.distributions.Categorical(action_probs).sample()
                 self.act[step] = action
                 self.act_prob[step] = action_probs.squeeze()[action]
@@ -75,7 +79,7 @@ class ReplayBuffer():
                 # reset the env if we're done
                 if done:
                     obs = T.tensor(env.reset()[0])
-                    done = T.zeros(1)
+                    done = 1
 
 def get_advantages(buffer: ReplayBuffer, agent: Agent,
                    discount: float, gae_lambda: float) -> Float[Tensor, "batch"]:
@@ -113,7 +117,8 @@ def compute_loss(probs_hat: Float[Tensor, "batch n_act"],
                  mb_returns: Float[Tensor, "batch"],
                  clip_eps: float = 0.2,
                  critic_loss_coef: float = 0.5,
-                 entropy_loss_coef: float = 0.01) -> Float[Tensor, ""]:
+                 entropy_loss_coef: float = 0.01,
+                 entropy_eps: float = 1e-6) -> Float[Tensor, ""]:
     """
         Compute the PPO loss
 
@@ -127,6 +132,7 @@ def compute_loss(probs_hat: Float[Tensor, "batch n_act"],
             clip_eps (float): PPO clipping parameter
             critic_loss_coef (float): how much to weight the critic loss
             entropy_loss_coef (float): how much to weight the entropy bonus
+            entropy_eps (float): small constant to prevent log(0) errors in the entropy loss
     """
     # compute policy ratios between the current policy and the old policy
     ratios = probs_hat[T.arange(probs_hat.size(0)), mb_actions] / mb_act_prob
@@ -140,11 +146,26 @@ def compute_loss(probs_hat: Float[Tensor, "batch n_act"],
     critic_loss = ((vals_hat[mb_actions] - mb_returns)**2).mean()
 
     # low entropy bonus (regularization)
-    entropy_loss = (probs_hat * T.log(probs_hat)).sum(-1).mean()
+    entropy_loss = (probs_hat * T.log(probs_hat + entropy_eps)).sum(-1).mean()
+
+    if T.isnan(actor_loss).any() or T.isinf(actor_loss).any():
+        raise ValueError("actor loss is NaN")
+    if T.isnan(critic_loss).any() or T.isinf(critic_loss).any():
+        raise ValueError("critic loss is NaN")
+    if T.isnan(entropy_loss).any() or T.isinf(entropy_loss).any():
+        raise ValueError("entropy loss is NaN")
 
     # total loss
     loss = -actor_loss + critic_loss_coef * critic_loss \
         - entropy_loss_coef * entropy_loss
+
+    # log the loss
+    wandb.log({
+        "actor_loss": -actor_loss.item(), # flipping the sign to make this a loss
+        "critic_loss": (critic_loss_coef * critic_loss).item(),
+        "entropy_loss": -(entropy_loss_coef * entropy_loss).item(),
+        "total_loss": loss.item(),
+    })
 
     return loss
 
@@ -154,15 +175,16 @@ def train_agent(
         d_obs = 4,
         n_act = 2,
         hidden_dims = [64, 64],
-        batch_size = 512,
-        mini_batch_size = 64,
+        batch_size = 2048,
+        mini_batch_size = 128,
         lr = 0.001,
-        n_timesteps = 32000,
+        n_timesteps = 10**6,
         n_epochs_per_episode = 10,
         gae_lambda = 0.95,
         clip_eps = 0.2,
-        critic_loss_coef = 0.5,
-        entropy_loss_coef = 0.01,
+        critic_loss_coef = 0.01,
+        entropy_loss_coef = 0.1,
+        entropy_eps: float = 1e-6,
     ) -> Agent:
     """
         Train an agent using PPO
@@ -183,6 +205,7 @@ def train_agent(
             clip_eps (float): PPO clipping parameter
             critic_loss_coef (float): how much to weight the critic loss
             entropy_loss_coef (float): how much to weight the entropy bonus
+            entropy_eps (float): small constant to prevent log(0) errors in the entropy loss
 
         Returns:
             Agent: the trained agent
@@ -210,13 +233,21 @@ def train_agent(
             "clip_eps": clip_eps,
             "critic_loss_coef": critic_loss_coef,
             "entropy_loss_coef": entropy_loss_coef, 
+            "entropy_eps": entropy_eps,
         },
+        monitor_gym=True,
     )
 
     n_episodes = n_timesteps // batch_size
     for _ in range(n_episodes): # episode loop
         # fill the buffer with a batch of trajectory data
         buffer.fill_with_samples(env, agent)
+
+        # log the average episode length and average reward
+        wandb.log({
+            "avg_episode_length": batch_size / max(1, buffer.dones.sum().item()),
+            "avg_episode_reward": buffer.rew.mean(dtype=T.float).item(),
+        })
             
         # estimate the empirical advantages and returns using GAE
         advantages = get_advantages(buffer, agent, discount, gae_lambda)
@@ -243,10 +274,8 @@ def train_agent(
                 # compute the loss
                 loss = compute_loss(probs_hat, vals_hat, mb_actions, mb_act_prob,
                                     mb_advantages, mb_returns, clip_eps,
-                                    critic_loss_coef, entropy_loss_coef)
+                                    critic_loss_coef, entropy_loss_coef, entropy_eps)
                 
-                # log the loss
-                wandb.log({"loss": loss.item()})
 
                 # update step
                 optimizer.zero_grad()
@@ -256,5 +285,6 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1', render_mode='rgb_array')
+    env = gym.wrappers.RecordVideo(env, "./videos")
     train_agent(env)
