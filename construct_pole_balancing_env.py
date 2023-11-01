@@ -180,8 +180,8 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         """
         if (
-                self.state[2]>=90 or
-                self.state[2]<=-90 or
+                self.state[2]>=math.radians(90) or
+                self.state[2]<=math.radians(-90) or
                 self.iteration>=self.max_iter
                 ):
             return 1
