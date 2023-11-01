@@ -173,7 +173,7 @@ def train_agent(
         discount = 0.99,
         d_obs = 4,
         n_act = 2,
-        hidden_dims = [64, 128, 32],
+        hidden_dims = [64, 64],
         batch_size = 2048,
         mini_batch_size = 128,
         lr = 0.001,
@@ -291,4 +291,6 @@ if __name__ == '__main__':
     env = gym.make('CartPole-v1', render_mode='rgb_array' if include_visuals_in_wandb else None)
     if include_visuals_in_wandb:
         env = gym.wrappers.RecordVideo(env, "./videos")
-    train_agent(env, monitor_gym=include_visuals_in_wandb)
+    train_agent(env,
+                hidden_dims=[16, 8, 2],
+                monitor_gym=include_visuals_in_wandb)
