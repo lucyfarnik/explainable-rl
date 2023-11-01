@@ -201,9 +201,9 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         termination=self.termination_status()
         return observation, reward, termination, False, dict()
         
-    def reset(self):
-        super().reset()
+    def reset(self, *args, **kwargs):
         self.iteration=0
+        return super().reset(*args, **kwargs)
         
         
         
