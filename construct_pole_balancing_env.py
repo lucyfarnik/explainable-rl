@@ -117,12 +117,12 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         if abs(self.state[2])>abs(self.prev_angle):
             # returns a reward negative reward proportional to how farther away
             # the pole was diverted from being balanced
-            return -1*(abs(self.state[2]-self.prev_angle)/45)
+            return -1*abs(self.state[2]-self.prev_angle)
         # if the action made the pole closer to being balanced
         elif abs(self.state[2])<abs(self.prev_angle):
             # returns a positive reward proportional to how closer it got the
             # pole being balanced
-            return (abs(self.state[2]-self.prev_angle)/45)
+            return abs(self.state[2]-self.prev_angle)
         # if the action didn't change the angle
         else:
             return 0.0
