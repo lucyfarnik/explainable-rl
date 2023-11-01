@@ -7,6 +7,7 @@ import torch.optim as optim
 import gymnasium as gym
 import wandb
 from jaxtyping import Float
+from construct_pole_balancing_env import ConstructPoleBalancingEnv
 
 class Agent(nn.Module):
     def __init__(self, d_obs: int, n_act: int, hidden_dims: list[int]) -> None:
@@ -73,7 +74,7 @@ class ReplayBuffer():
 
                 # take a step in the env
                 obs, rew, done, _, _ = env.step(action.item())
-                obs = T.tensor(obs)
+                obs = T.tensor(obs, dtype=T.float32)
                 self.rew[step] = rew
 
                 # reset the env if we're done
@@ -235,6 +236,7 @@ def train_agent(
             "critic_loss_coef": critic_loss_coef,
             "entropy_loss_coef": entropy_loss_coef, 
             "entropy_eps": entropy_eps,
+            "env_name": env.__class__.__name__,
         },
         monitor_gym=monitor_gym,
     )
@@ -248,6 +250,7 @@ def train_agent(
         wandb.log({
             "avg_episode_length": batch_size / max(1, buffer.dones.sum().item()),
             "avg_action": buffer.act.float().mean().item(),
+            "avg_reward": buffer.rew.mean().item(),
         })
         
         # estimate the empirical advantages and returns using GAE
@@ -286,9 +289,12 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    include_visuals_in_wandb = False
+    include_visuals_in_wandb = True
 
-    env = gym.make('CartPole-v1', render_mode='rgb_array' if include_visuals_in_wandb else None)
+    env = ConstructPoleBalancingEnv(
+        render_mode='rgb_array' if include_visuals_in_wandb else None)
+    # env = gym.make('CartPole-v1',
+    #                render_mode='rgb_array' if include_visuals_in_wandb else None)
     if include_visuals_in_wandb:
         env = gym.wrappers.RecordVideo(env, "./videos")
     train_agent(env,
