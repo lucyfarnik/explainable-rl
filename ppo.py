@@ -247,7 +247,6 @@ def train_agent(
         # log the average episode length and average reward
         wandb.log({
             "avg_episode_length": batch_size / max(1, buffer.dones.sum().item()),
-            "avg_episode_reward": buffer.rew.mean(dtype=T.float).item(),
             "avg_action": buffer.act.float().mean().item(),
         })
         
