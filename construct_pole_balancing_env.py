@@ -180,11 +180,10 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         """
         if (
-                self.state[2]>=90 or
-                self.state[2]<=-90 or
+                self.state[2]>=math.radians(90) or
+                self.state[2]<=math.radians(-90) or
                 self.iteration>=self.max_iter
                 ):
-            print("Problem cannot be solved anymore or maximum iteration reached")
             return 1
         else:
             
@@ -200,8 +199,11 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         # compute the reward
         reward=self.return_reward(agent_action)
         termination=self.termination_status()
-        return [observation, reward, termination]
+        return observation, reward, termination, False, dict()
         
+    def reset(self, *args, **kwargs):
+        self.iteration=0
+        return super().reset(*args, **kwargs)
         
         
         
