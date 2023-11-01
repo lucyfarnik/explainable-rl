@@ -9,8 +9,6 @@ import wandb
 from jaxtyping import Float
 from construct_pole_balancing_env import ConstructPoleBalancingEnv
 
-from construct_pole_balancing_env import ConstructPoleBalancingEnv
-
 class Agent(nn.Module):
     def __init__(self, d_obs: int, n_act: int, hidden_dims: list[int]) -> None:
         super().__init__()
