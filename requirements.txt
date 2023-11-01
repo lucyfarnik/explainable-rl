@@ -4,3 +4,4 @@ gymnasium
 wandb
 jaxtyping
 streamlit
+moviepy
