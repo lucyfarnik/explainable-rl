@@ -1,2 +1,7 @@
+.spyproject
+venv
+README
+venv/
+__pycache__
 videos/*
 wandb/*
