@@ -1,4 +1,5 @@
 .spyproject
 venv
 README
+venv/
 __pycache__

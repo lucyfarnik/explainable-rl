@@ -12,7 +12,9 @@ the RL agent to interact with. The following methods are included:
 """
 import math 
 
-class ConstructPoleBalancingEnv():
+from gymnasium.envs.classic_control.cartpole import CartPoleEnv
+
+class ConstructPoleBalancingEnv(CartPoleEnv):
     """
     Construtor function to create the environment for the RL task for pole-cart
     problem. 
@@ -31,22 +33,21 @@ class ConstructPoleBalancingEnv():
     
     def __init__(
             self,
-            cart_mass: float = 1.0, 
-            cart_length: float = 5,
-            cart_height: float = 5,
-            pole_mass: float = 0.0, 
+            cartmass: float = 1.0, 
+            masspole: float = 0.0, 
             gravity: float = 9.81, 
             friction: float = 0.0, 
-            pole_length: float = 0.5, 
+            length: float = 0.5, 
             cart_x_position: float = 0, 
             cart_velocity: float = 0, 
             pole_angle: int = 0, 
             pole_velocity: float = 0,
             max_iter: int = 100,
             iteration: int =0,
-            agent_action_bound: int = None, 
             maximum_buffer_size: int = 1000,
-            
+            force_mag: float = 10.0, 
+            render_mode: str = "human"
+
             )->None:
         """
         use the constructor method to define the parameters for the problem. 
@@ -54,14 +55,10 @@ class ConstructPoleBalancingEnv():
 
         Parameters
         ----------
-        cart_mass : float
+        cartmass : float
             Default value is 1 kg
 
-        pole_mass : float
-        
-        cart_length : float
-        
-        cart_height : float
+        masspole : float
             
         gravity : float
             default value is 9.81 N/kg
@@ -69,7 +66,7 @@ class ConstructPoleBalancingEnv():
         friction : float
             default value is frictionless 
 
-        pole_length : float
+        length : float
             default value is 0.3 meters
         
         cart_x_postion : float
@@ -97,129 +94,35 @@ class ConstructPoleBalancingEnv():
         None
 
         """
-        self.cart_mass=cart_mass
-        self.pole_mass=pole_mass
-        self.cart_length=cart_length
-        self.cart_height=cart_height
+        super().__init__(render_mode)
+        self.cartmass=cartmass
+        self.masspole=masspole
         self.friction=friction
         self.gravity=gravity
-        self.pole_length=pole_length
-        self.cart_x_position=cart_x_position
-        self.cart_velocity=cart_velocity
-        self.pole_angle=pole_angle
-        self.pole_velocity=pole_velocity
-        #the buffer are private to ensure they are not corrupted outside the 
-        # class by mistake 
-        self.__cart_position_buffer=[cart_x_position]
-        self.__cart_velocity_buffer=[cart_velocity]
-        self.__pole_angle_buffer=[pole_angle]
-        self.__pole_velocity_buffer=[pole_velocity]
-        self.__agent_action_buffer=[]
+        self.force_mag=force_mag
+        self.length=length
+        self.state=[cart_x_position, cart_velocity, pole_angle, pole_velocity]
         self.max_iter=max_iter
         self.iteration=iteration
-        self.agent_action_bound=agent_action_bound
         self.maximum_buffer_size=maximum_buffer_size
-        self.agent_action_boundary=agent_action_bound
+        self.prev_angle=None
         
-    def update_buffer(
-            self,
-            cart_position: float, 
-            cart_velocity: float, 
-            pole_angle: int, 
-            pole_velocity: float,
-            agent_action: float
-            )->[list, list, list, list, list]:
-        """
-        A method to update the buffers with new space state of the enviroment
-        The buffers could be used to use the observation at the previous 
-        time step to satisify the MDP formulation or for experience replay 
-        in training the RL agent 
-
-        Parameters
-        ----------
-        cart_position : float
-            DESCRIPTION.
-        cart_velocity : float
-            DESCRIPTION.
-        pole_angle : int
-            DESCRIPTION.
-        pole_velocity : float
-            DESCRIPTION.
-        agent_action: float
-
-        Returns
-        -------
-        [list, list, list, list]
-            [cart_position_buffer, cart_velocity_buffer, pole_angle_buffer, pole_velocity_buffer, agent_action_buffer].
-
-        """
-        # check the length of one buffer only w.r.t the size limit is enough 
-        # since they all update simulatenously and would have the same length
-        if len(self.__cart_position_buffer)==self.maximum_buffer_size:
-            # remove the first state in the buffers to update with the new state
-            self.__cart_position_buffer=self.__cart_position_buffer[1:]
-            self.__cart_velocity_buffer=self.__cart_velocity_buffer[1:]
-            self.__pole_angle_buffer=self.__pole_angle_buffer[1:]
-            self.__pole_velocity_buffer=self.__pole_velocity_buffer[1:]
-            self.__agent_action_buffer=self.__agent_action_buffer[1:]
-            
-        # update private variables using this method. 
-        self.__cart_position_buffer.append(cart_position)
-        self.__cart_velocity_buffer.append(cart_velocity)
-        self.__pole_angle_buffer.append(pole_angle)
-        self.__pole_velocity_buffer.append(pole_velocity)
-        self.__agent_action_buffer.append(agent_action)
-        
-        
-        return [self.__cart_position_buffer,
-                self.__cart_velocity_buffer, 
-                self.__pole_angle_buffer,
-                self.__pole_velocity_buffer, 
-                self.__agent_action_buffer]
-    
-    def view_buffer(self)-> [list, list, list, list, list]:
-        """
-        Method to help print and return the private buffers of state
-
-        Returns
-        -------
-        [self.__cart_position_buffer, self.__cart_velocity_buffer, 
-         self.__pole_angle_buffer, self.__pole_velocity_buffer]
-            Buffer list of each of the observations of the four variables 
-            representing the state at each timestep
-
-        """
-        print("the cart position buffer = ", self.__cart_position_buffer)
-        print("The cart velocity buffer = ", self.__cart_velocity_buffer)
-        print("The pole angle buffer = ", self.__pole_angle_buffer)
-        print("The pole velocity buffer = ", self.__pole_velocity_buffer)
-        print("the agent action buffer = ", self.__agent_action_buffer)
-        
-        
-        return [self.__cart_position_buffer, self.__cart_velocity_buffer, 
-                self.__pole_angle_buffer, self.__pole_velocity_buffer, 
-                self.__agent_action_buffer]
-    
     def return_reward(
             self, 
             agent_action: float
             )->float:
-        # validate agent's action w.r.t the defined boundary
-        if self.agent_action_boundary is not None and agent_action>=self.agent_action_bound:
-            print("agent action exceeds bound and severe penalty is applied")
-            return -10.0
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to 
         # be farther away from being balanced. Regardless of the direction
-        if abs(self.__pole_angle_buffer[-1])>abs(self.__pole_angle_buffer[-2]):
+        if abs(self.state[2])>abs(self.prev_angle):
             # returns a reward negative reward proportional to how farther away
             # the pole was diverted from being balanced
-            return -1*(abs(self.__pole_angle_buffer[-1])/45)
+            return -1*(abs(self.state[2])/45)
         # if the action made the pole closer to being balanced
-        elif abs(self.__pole_angle_buffer[-1])<abs(self.__pole_angle_buffer[-2]):
+        elif abs(self.state[2])<abs(self.prev_angle):
             # returns a positive reward proportional to how closer it got the
             # pole being balanced
-            return (abs(self.__pole_angle_buffer[-1])/45)
+            return (abs(self.state[2])/45)
         # if the action didn't change the angle
         else:
             return 0.0
@@ -244,31 +147,26 @@ class ConstructPoleBalancingEnv():
 
         """
         # update the cart's state as per the agent's action (Force on cart)
-        friction_force=self.friction*self.cart_velocity
-        cart_acceleration=(agent_action-friction_force)/self.cart_mass
-        self.cart_x_position=self.cart_x_position+(self.cart_velocity*self.time_delta)
-        self.cart_velocity=self.cart_velocity+(cart_acceleration*self.time_delta)
+        
+        cart_position=self.state[0]
+        cart_velocity=self.state[1]
+        pole_angle=self.state[2]
+        self.prev_angle=pole_angle
+        pole_velocity=self.state[3]
+        friction_force=self.friction*cart_velocity
+        cart_acceleration=(agent_action-friction_force)/self.cartmass
+        cart_position=cart_position+(cart_velocity*self.time_delta)
+        cart_velocity=cart_velocity+(cart_acceleration*self.time_delta)
         
         # update the pole's state
-        pole_angular_acceleration=(self.gravity/self.pole_length)*math.sin(self.pole_angle)
-        self.pole_angle=self.pole_angle+(pole_angular_acceleration*self.time_delta)
-        self.pole_velocity=self.pole_velocity+(pole_angular_acceleration*self.time_delta)
+        pole_angular_acceleration=(self.gravity/self.length)*math.sin(pole_angle)
+        pole_angle=pole_angle+(pole_angular_acceleration*self.time_delta)
+        pole_velocity=pole_velocity+(pole_angular_acceleration*self.time_delta)
         
-        # update the buffers with the new state
-        self.update_buffer(cart_position=self.cart_x_position, 
-                           cart_velocity=self.cart_velocity,
-                           pole_angle=self.pole_angle,
-                           pole_velocity=self.pole_velocity, 
-                           agent_action=agent_action
-                           )
         # increment the current iteration 
         self.iteration+=1
-        
-        return {"cart_position": self.cart_x_position, 
-                "cart_velocity": self.cart_velocity, 
-                "pole_angle": self.pole_angle, 
-                "pole_velocity": self.pole_velocity
-                }
+        self.state=[cart_position, cart_velocity, pole_angle, pole_velocity]
+        return self.state
     
     def termination_status(self)->bool:
         """
@@ -278,19 +176,19 @@ class ConstructPoleBalancingEnv():
         Returns
         -------
         bool
-            1 means terminate and -1 is do not terminate.
+            1 means terminate and 0 is do not terminate.
 
         """
         if (
-                self.__pole_angle_buffer[-1]>=90 or
-                self.__pole_angle_buffer[-1]<=-90 or
+                self.state[2]>=90 or
+                self.state[2]<=-90 or
                 self.iteration>=self.max_iter
                 ):
             print("Problem cannot be solved anymore or maximum iteration reached")
             return 1
         else:
             
-            return -1
+            return 0
         
     def step(self, agent_action):
         """
@@ -298,7 +196,7 @@ class ConstructPoleBalancingEnv():
             having to call each method on its own in your script
         """
         # first get the new env observation
-        observation=self.state_transition(agent_action)["cart_position"]
+        observation=self.state_transition(agent_action)
         # compute the reward
         reward=self.return_reward(agent_action)
         termination=self.termination_status()
