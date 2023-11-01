@@ -4,20 +4,27 @@ import streamlit as st
 from minigrid.core.actions import Actions
 from src.maze_env import MazeEnv
 
+POSSIBLE_ACTIONS = [Actions.forward, Actions.left, Actions.right]
+
 
 def main():
-    possible_actions = [Actions.forward, Actions.left, Actions.right]
-    maze = MazeEnv(width=10, height=10, render_mode="rgb_array")
+    st.title("Grid World")
+
+    with st.container():  # Maze controls
+        input_width = st.slider(
+            label="Size", min_value=5, value=10, max_value=50, step=1
+        )
+
+    maze = MazeEnv(width=input_width, height=input_width, render_mode="rgb_array")
     maze.reset(
         seed=42
     )  # Have to call to run the _gen_grid override and actually generate the grid
     img = maze.render()
 
-    st.title("Grid World")
     # st.empty is the recommended way to update page content
     with st.empty():
         while True:
-            action = sample(possible_actions, 1)[0]
+            action = sample(POSSIBLE_ACTIONS, 1)[0]
             maze.step(action=action)
             img = maze.render()
             st.image(image=img, caption="Grid World", use_column_width=True)
