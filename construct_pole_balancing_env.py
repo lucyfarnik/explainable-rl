@@ -113,23 +113,23 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             agent_action: float
             )->float:
         
-        return -1*abs(self.state[2])
+        # return -1*abs(self.state[2])
         
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to 
         # be farther away from being balanced. Regardless of the direction
-        # if abs(self.state[2])>abs(self.prev_angle):
-        #     # returns a reward negative reward proportional to how farther away
-        #     # the pole was diverted from being balanced
-        #     return 0
-        # # if the action made the pole closer to being balanced
-        # elif abs(self.state[2])<abs(self.prev_angle):
-        #     # returns a positive reward proportional to how closer it got the
-        #     # pole being balanced
-        #     return 1
-        # # if the action didn't change the angle
-        # else:
-        #     return 0.0
+        if abs(self.state[2])>abs(self.prev_angle):
+            # returns a reward negative reward proportional to how farther away
+            # the pole was diverted from being balanced
+            return -1*abs(self.state[2]-self.prev_angle)
+        # if the action made the pole closer to being balanced
+        elif abs(self.state[2])<abs(self.prev_angle):
+            # returns a positive reward proportional to how closer it got the
+            # pole being balanced
+            return abs(self.state[2]-self.prev_angle)
+        # if the action didn't change the angle
+        else:
+            return 0.0
         
         
     def state_transition(
