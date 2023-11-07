@@ -1,4 +1,5 @@
 .spyproject
+.idea
 venv
 README
 venv/
