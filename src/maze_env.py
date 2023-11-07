@@ -12,15 +12,32 @@ from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 
 class MazeEnv(MiniGridEnv):
     """
-    Creates a Maze Environment
+    Maze Environment based on the MiniGrid package.
+
+    Attributes:
+        width (int): Number of corridors across the maze (excluding walls)
+        heigh (int): Number of corridors vertically (excluding walls)
+        agent_start_pos (tuple(int, int)): X and Y coordinates the agent starts from.
+            Coordinates are 0 indexed but the 0th column and row will be in the outer wall so (1, 1)
+            is the top left corner.
+        agent_start_dir (int): Direction the agent is facing at start. 0 -> north, 1 -> east, 2 -> south, 3 -> west.
+        max_steps (int): Number of steps the agent can take before the simulation ends.
+        render_mode (str): Inherited. Either "human" or "rgb_array". If "human", the inherited function render()
+            opens a window to display the state. If "rgb_array" returns an n x m x 3 numpy array of rgb pixel values.
+
+    Example:
+        >>> maze = MazeEnv(width=10, height=10, render_mode="rgb_array")
+        >>> maze.reset() # Have to call to run the _gen_grid override and actually generate the grid
+        >>> img = maze.render()
+
     """
 
     def __init__(
         self,
-        width=10,
-        height=10,
-        agent_start_pos=(1, 1),
-        agent_start_dir=0,
+        width: int = 10,
+        height: int = 10,
+        agent_start_pos: tuple(int, int) = (1, 1),
+        agent_start_dir: int = 0,
         max_steps: int | None = None,
         **kwargs,
     ):
@@ -44,12 +61,23 @@ class MazeEnv(MiniGridEnv):
 
     @staticmethod
     def _gen_mission():
+        """Simply creates a string that describes the agent's mission in the MiniGrid Environment.
+
+        Returns:
+            str: The mission as a human-readable string.
+        """
         return "Solve the Maze"
 
-    # Overrides an empty function on the MiniGrid class
-    # The intended way to define the grid construction function.
-    # Must call reset() after constructing to run this function.
     def _gen_grid(self, width, height):
+        """
+        Overrides an empty function on the MiniGrid class.
+            The intended way to define the grid construction function.
+            Must call reset() after initializing to run this function.
+
+        Args:
+            width (int): Width of the maze in corridors (excluding walls)
+            height (int): Height of the maze in corridors (excluding walls)
+        """
         # Generate Maze using the mazelib package
         m = Maze()
         m.generator = DungeonRooms(h0=height, w0=width)  # TODO add options
