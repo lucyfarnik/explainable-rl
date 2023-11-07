@@ -1,3 +1,10 @@
+"""
+Creates a maze environment. The environment is based on the MiniGrid package.
+The mazelib package is used to 
+
+Todo:
+    * Make the agent start position and goal configurable. 
+"""
 from __future__ import annotations
 
 from minigrid.minigrid_env import MiniGridEnv
