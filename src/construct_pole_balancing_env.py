@@ -11,6 +11,7 @@ the RL agent to interact with. The following methods are included:
 @author: hn23952
 """
 import math 
+import numpy as np
 
 from gymnasium.envs.classic_control.cartpole import CartPoleEnv
 
@@ -29,12 +30,12 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
     """
     # assume that this a reasonable time frame for the agent to act and the env
     # need to update
-    time_delta=0.1
+    time_delta=0.02
     
     def __init__(
             self,
             cartmass: float = 1.0, 
-            masspole: float = 0.0, 
+            masspole: float = 0.1, 
             gravity: float = 9.81, 
             friction: float = 0.0, 
             length: float = 0.5, 
@@ -111,21 +112,24 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             self, 
             agent_action: float
             )->float:
+        
+        return -1*abs(self.state[2])
+        
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to 
         # be farther away from being balanced. Regardless of the direction
-        if abs(self.state[2])>abs(self.prev_angle):
-            # returns a reward negative reward proportional to how farther away
-            # the pole was diverted from being balanced
-            return -1*abs(self.state[2]-self.prev_angle)
-        # if the action made the pole closer to being balanced
-        elif abs(self.state[2])<abs(self.prev_angle):
-            # returns a positive reward proportional to how closer it got the
-            # pole being balanced
-            return abs(self.state[2]-self.prev_angle)
-        # if the action didn't change the angle
-        else:
-            return 0.0
+        # if abs(self.state[2])>abs(self.prev_angle):
+        #     # returns a reward negative reward proportional to how farther away
+        #     # the pole was diverted from being balanced
+        #     return 0
+        # # if the action made the pole closer to being balanced
+        # elif abs(self.state[2])<abs(self.prev_angle):
+        #     # returns a positive reward proportional to how closer it got the
+        #     # pole being balanced
+        #     return 1
+        # # if the action didn't change the angle
+        # else:
+        #     return 0.0
         
         
     def state_transition(
@@ -137,8 +141,8 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         Parameters
         ----------
-        agent_action : float
-            force applied by the agent on the cart .
+        agent_action : bool
+            direction to apply force by the agent on the cart .
 
         Returns
         -------
@@ -148,24 +152,45 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         """
         # update the cart's state as per the agent's action (Force on cart)
         
+        # determine if the force should be + or - according to direction
+        # received from the agent
+        if agent_action == 1:
+            force=self.force_mag
+        else:
+    
+            force=-self.force_mag
+            
+        # retrieve the current values of the components of the state
         cart_position=self.state[0]
         cart_velocity=self.state[1]
         pole_angle=self.state[2]
         self.prev_angle=pole_angle
         pole_velocity=self.state[3]
-        friction_force=self.friction*cart_velocity
-        cart_acceleration=(agent_action-friction_force)/self.cartmass
-        cart_position=cart_position+(cart_velocity*self.time_delta)
-        cart_velocity=cart_velocity+(cart_acceleration*self.time_delta)
         
-        # update the pole's state
-        pole_angular_acceleration=(self.gravity/self.length)*math.sin(pole_angle)
-        pole_angle=pole_angle+(pole_angular_acceleration*self.time_delta)
-        pole_velocity=pole_velocity+(pole_angular_acceleration*self.time_delta)
+        #  update force according to friction
+        force=force-self.friction
+        
+        total_mass=self.masspole+self.cartmass
+        pole_mass_length=self.masspole*self.length
+
+        # intermediate variable to faciliate computation of the acc
+        temp = (force + pole_mass_length * pole_velocity ** 2 * np.sin(pole_angle) - pole_velocity * np.cos(pole_angle)) / total_mass
+        
+        # update the pole acc and cart acc
+        pole_acceleration = (self.gravity * np.sin(pole_angle) - np.cos(pole_angle) * temp) / (self.length * (4.0 / 3.0 - self.masspole * np.cos(pole_angle) ** 2 / total_mass))
+        cart_acceleration = temp - pole_mass_length * pole_acceleration * np.cos(pole_angle) / total_mass
+    
+        # Update state variables
+        cart_position = cart_position + cart_velocity
+        cart_velocity = cart_velocity + cart_acceleration
+        pole_angle = pole_angle + pole_velocity
+        pole_velocity = pole_velocity + pole_acceleration
+
         
         # increment the current iteration 
         self.iteration+=1
         self.state=[cart_position, cart_velocity, pole_angle, pole_velocity]
+        
         return self.state
     
     def termination_status(self)->bool:
