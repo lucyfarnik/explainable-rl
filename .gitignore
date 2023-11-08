@@ -14,8 +14,6 @@ __pycache__/
 .spyproject
 .vscode
 
+docs/
 videos/*
 wandb/*
-.venv/
-docs/
-.vscode
