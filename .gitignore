@@ -5,3 +5,7 @@ venv/
 __pycache__
 videos/*
 wandb/*
+.venv/
+docs/
+.vscode
+
