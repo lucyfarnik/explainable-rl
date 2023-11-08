@@ -30,7 +30,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
     """
     # assume that this a reasonable time frame for the agent to act and the env
     # need to update
-    time_delta=0.02
+    time_delta=0.5
     
     def __init__(
             self,
@@ -141,7 +141,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         Parameters
         ----------
-        agent_action : bool
+        agent_action : int
             direction to apply force by the agent on the cart .
 
         Returns
