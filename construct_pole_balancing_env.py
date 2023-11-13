@@ -116,15 +116,15 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             agent_action: float
             )->float:
 
-        # return -1*abs(self.state[2])
+        return -1*abs(self.state[2])
 
     
         # Check if the pole has fallen or if the cart has gone out of bounds
-        if abs(self.state[2]) > math.radians(self.angle_threshold):
-            return 0  # Penalize for failure
+        # if abs(self.state[2]) > math.radians(self.angle_threshold):
+        #     return 0  # Penalize for failure
     
-        # Otherwise, provide a small positive reward for each time step
-        return 1
+        # # Otherwise, provide a small positive reward for each time step
+        # return 1
 
         
     def state_transition(
