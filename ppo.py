@@ -446,7 +446,7 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    include_visuals_in_wandb = False
+    include_visuals_in_wandb = True
 
     sweep_config = {
         # 'method': 'random',
@@ -483,10 +483,10 @@ if __name__ == '__main__':
         }
     }
 
-    # env = ConstructPoleBalancingEnv(
-    #     render_mode='rgb_array' if include_visuals_in_wandb else None)
-    env = gym.make('CartPole-v1',
-                   render_mode='rgb_array' if include_visuals_in_wandb else None)
+    env = ConstructPoleBalancingEnv(
+        render_mode='rgb_array' if include_visuals_in_wandb else None)
+    # env = gym.make('CartPole-v1',
+    #                render_mode='rgb_array' if include_visuals_in_wandb else None)
     if include_visuals_in_wandb:
         env = gym.wrappers.RecordVideo(env, "./videos")
 

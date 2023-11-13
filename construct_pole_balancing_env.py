@@ -30,7 +30,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
     """
     # assume that this a reasonable time frame for the agent to act and the env
     # need to update
-    time_delta=0.5
+    time_delta=0.02
     
     def __init__(
             self,
@@ -41,13 +41,14 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             length: float = 0.5, 
             cart_x_position: float = 0, 
             cart_velocity: float = 0, 
-            pole_angle: int = 0, 
+            pole_angle: int = 0.2, 
             pole_velocity: float = 0,
-            max_iter: int = 100,
+            max_iter: int = 1000,
             iteration: int =0,
             maximum_buffer_size: int = 1000,
             force_mag: float = 10.0, 
-            render_mode: str = "human"
+            render_mode: str = "human", 
+            angle_threshold=20 #define in degrees
 
             )->None:
         """
@@ -107,30 +108,24 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         self.iteration=iteration
         self.maximum_buffer_size=maximum_buffer_size
         self.prev_angle=None
+        self.pole_mass_length=self.masspole*self.length
+        self.angle_threshold=angle_threshold
         
     def return_reward(
             self, 
             agent_action: float
             )->float:
-        
+
         # return -1*abs(self.state[2])
-        
-        # if the last observed angle of the pole is greater is than second to
-        # to last observed pole angle i.e. the RL agent caused the pole to 
-        # be farther away from being balanced. Regardless of the direction
-        if abs(self.state[2])>abs(self.prev_angle):
-            # returns a reward negative reward proportional to how farther away
-            # the pole was diverted from being balanced
-            return -1*abs(self.state[2]-self.prev_angle)
-        # if the action made the pole closer to being balanced
-        elif abs(self.state[2])<abs(self.prev_angle):
-            # returns a positive reward proportional to how closer it got the
-            # pole being balanced
-            return abs(self.state[2]-self.prev_angle)
-        # if the action didn't change the angle
-        else:
-            return 0.0
-        
+
+    
+        # Check if the pole has fallen or if the cart has gone out of bounds
+        if abs(self.state[2]) > math.radians(self.angle_threshold):
+            return 0  # Penalize for failure
+    
+        # Otherwise, provide a small positive reward for each time step
+        return 1
+
         
     def state_transition(
             self,
@@ -157,39 +152,38 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         if agent_action == 1:
             force=self.force_mag
         else:
-    
             force=-self.force_mag
             
-        # retrieve the current values of the components of the state
-        cart_position=self.state[0]
-        cart_velocity=self.state[1]
-        pole_angle=self.state[2]
+        # retrieve the current values of the components of the state        
+        cart_position, cart_velocity, pole_angle, pole_velocity = self.state
         self.prev_angle=pole_angle
-        pole_velocity=self.state[3]
+        # force = self.force_mag if action == 1 else -self.force_mag
+        cospole_angle = math.cos(pole_angle)
+        sinpole_angle = math.sin(pole_angle)
         
-        #  update force according to friction
-        force=force-self.friction
+        #below implementation from state transition is from gymnasium's cartpole.py
+        # For the interested reader:
+        # https://coneural.org/florian/papers/05_cart_pole.pdf
+        temp = (
+            force + self.polemass_length * pole_velocity**2 * sinpole_angle
+        ) / self.total_mass
+        pole_angle_acc = (self.gravity * sinpole_angle - cospole_angle * temp) / (
+            self.length * (4.0 / 3.0 - self.masspole * cospole_angle**2 / self.total_mass)
+        )
+        xacc = temp - self.polemass_length * pole_angle_acc * cospole_angle / self.total_mass
         
-        total_mass=self.masspole+self.cartmass
-        pole_mass_length=self.masspole*self.length
-
-        # intermediate variable to faciliate computation of the acc
-        temp = (force + pole_mass_length * pole_velocity ** 2 * np.sin(pole_angle) - pole_velocity * np.cos(pole_angle)) / total_mass
+        #update the state variables
+        cart_position = cart_position + self.tau * cart_velocity
+        cart_velocity = cart_velocity + self.tau * xacc
+        pole_angle = pole_angle + self.tau * pole_velocity
+        pole_velocity = pole_velocity + self.tau * pole_angle_acc
         
-        # update the pole acc and cart acc
-        pole_acceleration = (self.gravity * np.sin(pole_angle) - np.cos(pole_angle) * temp) / (self.length * (4.0 / 3.0 - self.masspole * np.cos(pole_angle) ** 2 / total_mass))
-        cart_acceleration = temp - pole_mass_length * pole_acceleration * np.cos(pole_angle) / total_mass
-    
-        # Update state variables
-        cart_position = cart_position + cart_velocity
-        cart_velocity = cart_velocity + cart_acceleration
-        pole_angle = pole_angle + pole_velocity
-        pole_velocity = pole_velocity + pole_acceleration
-
+        
+        self.state = [cart_position, cart_velocity, pole_angle, pole_velocity]
         
         # increment the current iteration 
         self.iteration+=1
-        self.state=[cart_position, cart_velocity, pole_angle, pole_velocity]
+        # self.state=[cart_position, cart_velocity, pole_angle, pole_velocity]
         
         return self.state
     
@@ -204,11 +198,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             1 means terminate and 0 is do not terminate.
 
         """
-        if (
-                self.state[2]>=math.radians(90) or
-                self.state[2]<=math.radians(-90) or
-                self.iteration>=self.max_iter
-                ):
+        if abs(self.state[2])>=math.radians(90):
             return 1
         else:
             
