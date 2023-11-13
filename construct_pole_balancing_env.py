@@ -161,6 +161,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         cospole_angle = math.cos(pole_angle)
         sinpole_angle = math.sin(pole_angle)
         
+        #below implementation from state transition is from gymnasium's cartpole.py
         # For the interested reader:
         # https://coneural.org/florian/papers/05_cart_pole.pdf
         temp = (
