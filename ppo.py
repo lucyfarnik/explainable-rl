@@ -446,7 +446,7 @@ def train_agent(
     return agent
 
 if __name__ == '__main__':
-    include_visuals_in_wandb = False
+    include_visuals_in_wandb = True
 
     sweep_config = {
         # 'method': 'random',
