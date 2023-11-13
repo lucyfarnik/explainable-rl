@@ -1,7 +1,8 @@
-numpy
-torch
 gymnasium
-wandb
 jaxtyping
+mazelib
+minigrid
+numpy
 streamlit
-moviepy
+torch
+wanb
