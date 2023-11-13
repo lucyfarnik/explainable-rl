@@ -16,3 +16,7 @@ __pycache__/
 
 videos/*
 wandb/*
+.venv/
+docs/
+.vscode
+
