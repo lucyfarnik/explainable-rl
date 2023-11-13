@@ -46,6 +46,8 @@ agent_x_pos, agent_y_pos = agent_position_select()
 #         sb.lineplot(x=x, y=test_distribution, label='Test')
 #         st.pyplot(plt)
 
+position_train_mean, position_train_std_dev, position_test_mean, position_test_std_dev = properties("position", 0.01, 10.00)
+
 latest_iteration = st.empty()
 bar = st.progress(0)
 "Start a computation..."

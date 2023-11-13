@@ -6,25 +6,25 @@ import seaborn as sb
 import time
 
 
-def properties(name: str):
+def properties(name: str, min: float, max: float):
     with st.expander(f"Select distributions for {name}"):
         col1, col2 = st.columns([2, 2])
         with col2:
             train_mean = st.slider(
                 label=f'Select a mean {name} for training set',
-                min_value=-10.00, value=0.00, max_value=10.00, key=f'{name}_train_mean', step=0.01)
+                min_value= min, value=0.00, max_value= max, key=f'{name}_train_mean', step=0.01)
 
             train_std_dev = st.slider(
                 label='Select a std dev for training set',
-                min_value=0.01, value=1.00, max_value=10.00, key=f'{name}_train_std_dev', step=0.01)
+                min_value=0.01, value=1.00, max_value= max, key=f'{name}_train_std_dev', step=0.01)
 
             test_mean = st.slider(
                 label=f'Select a mean {name} for test set',
-                min_value=-10.00, max_value=10.00, key=f'{name}_test_mean')
+                min_value= min, value = 0.00, max_value=max, key=f'{name}_test_mean')
 
             test_std_dev = st.slider(
                 label='Select a std dev for test set',
-                min_value=0.01, value=1.00, max_value=10.00, key=f'{name}_test_std_dev', step=0.01)
+                min_value=0.01, value=1.00, max_value=max, key=f'{name}_test_std_dev', step=0.01)
 
         with col1:
             st.subheader(name.capitalize())
