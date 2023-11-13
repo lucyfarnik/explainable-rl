@@ -1,21 +1,86 @@
 import streamlit as st
+from time import sleep
+
 from src.component_property import properties, progress
+from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
+from src.ppo import train_agent
+
+with st.expander("Inputs"):
+    tabs = st.tabs(["Cart Mass", "Pole Mass", "Gravity", "Friction", "Length", "Angle"])
+    with tabs[0]:
+        cart_mass = properties("cart mass", min=0.5, max=5.0, default=1.0)
+    with tabs[1]:
+        pole_mass = properties("pole mass", min=0.1, max=1.0, default=0.1)
+    with tabs[2]:
+        gravity = properties("gravity", min=0.1, max=20.0, default=9.81)
+    with tabs[3]:
+        friction = properties("friction", min=0.0, max=1.0, default=0.0)
+    with tabs[4]:
+        length = properties("length", min=0.0, max=1.0, default=0.5)
+    with tabs[5]:
+        pole_start_angle = properties("angle", min=0.0, max=45.0, default=0.0)
 
 
-with st.container():
-    st.write("This is a placeholder for the pole animation")
+# Construct Environment
+if "env" not in st.session_state:
+    st.session_state.env = ConstructPoleBalancingEnv()
+    st.session_state.env.reset()
 
-mass_train_mean, mass_train_std_dev, mass_test_mean, mass_test_std_dev = properties("mass")
-angle_train_mean, angle_train_std_dev, angle_test_mean, angle_test_std_dev = properties("angle")
+
+if "agent" not in st.session_state:
+    st.session_state.agent = None
+
+
+def handle_train_button():
+    st.session_state.agent = None
+    # st.session_state.agent = train_agent(
+    #     env=env,
+    # )
+
+
+# Training
+st.button(
+    label="Train Agent",
+    key="train_button",
+    help="Train an agent with the current settings.",
+    on_click=handle_train_button(),
+)
 progress()
-# with st.expander("Select initial angle and mass of pole"):
-#     angle = st.slider("Initial angle in degrees", 0, 180, 1)
-#     mass = st.slider("Pole mass in kilograms", 0, 100, 1)
 
-# import time
-#
-# latest_iteration = st.empty()
-# bar = st.progress(0)
-# from property_component import progress
-# progress(latest_iteration, bar)
 
+# TODO move into components >>>
+if "play" not in st.session_state:
+    st.session_state.play = False
+
+
+def handle_play_button():
+    st.session_state.play = not st.session_state.play
+
+
+# Start/Button
+st.button(
+    label=("Stop" if st.session_state.play else "Play"),
+    key="play_button",
+    help="Press to stop and start the animation",
+    on_click=handle_play_button,
+)
+# <<<<
+
+# Display environment
+if st.session_state["play"]:
+    with st.empty():
+        i = 0
+        termination = False
+        while True:
+            action = i % 2
+            _, _, termination, _, _ = st.session_state.env.step(agent_action=action)
+            if termination:
+                st.session_state.env.reset()
+            img = st.session_state.env.render()
+            st.image(image=img, caption="Pole World", use_column_width=True)
+            sleep(0.1)
+            i += 1
+else:
+    st.image(
+        image=st.session_state.env.render(), caption="Pole World", use_column_width=True
+    )  # Finish with cart on screen

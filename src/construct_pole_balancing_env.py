@@ -32,11 +32,11 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
     # assume that this a reasonable time frame for the agent to act and the env
     # need to update
-    time_delta = 0.5
+    time_delta = 0.1
 
     def __init__(
         self,
-        cartmass: float = 1.0,
+        cartmass: float = 10.0,
         masspole: float = 0.1,
         gravity: float = 9.81,
         friction: float = 0.0,
@@ -49,7 +49,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         iteration: int = 0,
         maximum_buffer_size: int = 1000,
         force_mag: float = 10.0,
-        render_mode: str = "human",
+        render_mode: str = "rgb_array",
     ) -> None:
         """
         use the constructor method to define the parameters for the problem.
@@ -110,23 +110,23 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         self.prev_angle = None
 
     def return_reward(self, agent_action: float) -> float:
-        # return -1*abs(self.state[2])
+        return -1 * abs(self.state[2])
 
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to
         # be farther away from being balanced. Regardless of the direction
-        if abs(self.state[2]) > abs(self.prev_angle):
-            # returns a reward negative reward proportional to how farther away
-            # the pole was diverted from being balanced
-            return -1 * abs(self.state[2] - self.prev_angle)
-        # if the action made the pole closer to being balanced
-        elif abs(self.state[2]) < abs(self.prev_angle):
-            # returns a positive reward proportional to how closer it got the
-            # pole being balanced
-            return abs(self.state[2] - self.prev_angle)
-        # if the action didn't change the angle
-        else:
-            return 0.0
+        # if abs(self.state[2]) > abs(self.prev_angle):
+        #     # returns a reward negative reward proportional to how farther away
+        #     # the pole was diverted from being balanced
+        #     return -1 * abs(self.state[2] - self.prev_angle)
+        # # if the action made the pole closer to being balanced
+        # elif abs(self.state[2]) < abs(self.prev_angle):
+        #     # returns a positive reward proportional to how closer it got the
+        #     # pole being balanced
+        #     return abs(self.state[2] - self.prev_angle)
+        # # if the action didn't change the angle
+        # else:
+        #     return 0.0
 
     def state_transition(self, agent_action: float):
         """
