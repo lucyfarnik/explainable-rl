@@ -1,8 +1,8 @@
 gymnasium
 jaxtyping
 mazelib
-minigrid
 moviepy
+minigrid
 numpy
 streamlit
 torch
