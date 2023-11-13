@@ -1,8 +1,10 @@
+numpy
+torch
+gymnasium
 jaxtyping
 mazelib
+moviepy
 minigrid
-gymnasium
 streamlit
 torch
 wanb
-moviepy
