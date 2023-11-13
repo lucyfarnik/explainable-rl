@@ -11,6 +11,7 @@ venv.bak/
 __pycache__/
 
 # Editor
+.spyproject
 .vscode
 
 docs/
