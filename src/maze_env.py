@@ -63,6 +63,8 @@ class MazeEnv(MiniGridEnv):
             # Set this to True for maximum speed
             see_through_walls=True,
             max_steps=max_steps,
+            # World is fully observable. Don't highlight the agent's field of view for renders
+            highlight=False,
             **kwargs,
         )
 
