@@ -47,7 +47,8 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             iteration: int =0,
             maximum_buffer_size: int = 1000,
             force_mag: float = 10.0, 
-            render_mode: str = "human"
+            render_mode: str = "human", 
+            angle_threshold=20 #define in degrees
 
             )->None:
         """
@@ -108,6 +109,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         self.maximum_buffer_size=maximum_buffer_size
         self.prev_angle=None
         self.pole_mass_length=self.masspole*self.length
+        self.angle_threshold=angle_threshold
         
     def return_reward(
             self, 
@@ -115,13 +117,10 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             )->float:
 
         # return -1*abs(self.state[2])
-        
-        # Define a threshold for pole angle and position
-        angle_threshold = 20  # in degrees
-        # position_threshold = 2.4  # in units
+
     
         # Check if the pole has fallen or if the cart has gone out of bounds
-        if abs(self.state[2]) > math.radians(angle_threshold):
+        if abs(self.state[2]) > math.radians(self.angle_threshold):
             return 0  # Penalize for failure
     
         # Otherwise, provide a small positive reward for each time step
@@ -198,10 +197,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             1 means terminate and 0 is do not terminate.
 
         """
-        if abs(self.state[2])>=math.radians(90): 
-                # self.iteration>=self.max_iter
-            print(self.state[2])
-            print('terminating')
+        if abs(self.state[2])>=math.radians(90):
             return 1
         else:
             
