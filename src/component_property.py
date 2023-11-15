@@ -109,7 +109,7 @@ def progress():
     "Starting a computation..."
     # Add a placeholder
     # latest_iteration = st.empty()
-    bar = st.progress(50)
+    return st.progress(50)
 
     # for i in range(20):
     # Update the progress bar with each iteration.

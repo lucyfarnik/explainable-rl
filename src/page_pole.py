@@ -5,6 +5,9 @@ from src.component_property import properties, progress
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 from src.ppo import train_agent
 
+st.title("Pole Balancing")
+
+
 with st.expander("Inputs"):
     tabs = st.tabs(["Cart Mass", "Pole Mass", "Gravity", "Friction", "Length", "Angle"])
     with tabs[0]:
@@ -32,9 +35,10 @@ if "agent" not in st.session_state:
 
 
 def handle_train_button():
-    st.session_state.agent = None
+    pass
+    # st.session_state.agent = None
     # st.session_state.agent = train_agent(
-    #     env=env,
+    #     env=st.session_state.env,
     # )
 
 
@@ -45,7 +49,8 @@ st.button(
     help="Train an agent with the current settings.",
     on_click=handle_train_button(),
 )
-progress()
+
+# bar = progress()
 
 
 # TODO move into components >>>

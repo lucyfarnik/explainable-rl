@@ -35,7 +35,7 @@ with st.expander("Inputs"):  # Maze controls
         st.slider(
             label="Size",
             min_value=5,
-            value=st.session_state.maze_size,
+            value=10,
             max_value=50,
             step=1,
             key="maze_size",
@@ -52,17 +52,28 @@ with st.expander("Inputs"):  # Maze controls
     #     position_test_std_dev,
     # ) = properties("position", 0.01, 10.00)
 
-    latest_iteration = st.empty()
-    bar = st.progress(0)
-    "Start a computation..."
-    progress()
-    "...and we're done"
 
-    # with st.container():
-    #     st.button("Up")
-    #     st.button("Right")
-    #     st.button("Left")
-    #     st.button("Down")
+def handle_train_button():
+    st.session_state.agent = None
+    # st.session_state.agent = train_agent(
+    #     env=st.session_state.env,
+    # )
+
+
+# Training
+st.button(
+    label="Train Agent",
+    key="train_button",
+    help="Train an agent with the current settings.",
+    on_click=handle_train_button(),
+)
+progress()
+
+# with st.container():
+#     st.button("Up")
+#     st.button("Right")
+#     st.button("Left")
+#     st.button("Down")
 
 # TODO move into components >>>
 if "play" not in st.session_state:
