@@ -236,7 +236,7 @@ def train_agent(
         batch_size = 4096, # 2^12
         mini_batch_size = 128, # 2^7
         lr = 0.001,
-        use_wandb=False,
+        use_wandb = False,
         # Needs to be a power of 2, otherwise the actual number would
         # depend on the batch size because of integer division, and then
         # the sweep comparisons wouldn't be fair
@@ -450,7 +450,8 @@ def train_agent(
 
 if __name__ == '__main__':
     include_visuals_in_wandb = False
-    use_wandb_=os.environ["USE_WANDB"]
+    use_wandb = True
+
     sweep_config = {
         # 'method': 'random',
         'method': 'grid',
@@ -494,7 +495,7 @@ if __name__ == '__main__':
         env = gym.wrappers.RecordVideo(env, "./videos")
     sweep_id = wandb.sweep(sweep_config, project="explainable-rl-iai")
     wandb.agent(sweep_id,
-                function=partial(train_agent, env),
+                function=partial(train_agent, env, use_wandb=use_wandb),
                 count=1024)
 
     # train_agent(env,
