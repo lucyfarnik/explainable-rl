@@ -236,7 +236,7 @@ def train_agent(
         batch_size = 4096, # 2^12
         mini_batch_size = 128, # 2^7
         lr = 0.001,
-
+        use_wandb=False,
         # Needs to be a power of 2, otherwise the actual number would
         # depend on the batch size because of integer division, and then
         # the sweep comparisons wouldn't be fair
@@ -290,8 +290,9 @@ def train_agent(
         Returns:
             Agent: the trained agent
     """
-    wandb.init(project="explainable-rl-iai", monitor_gym=monitor_gym)
-    config = wandb.config
+    if use_wandb:
+        wandb.init(project="explainable-rl-iai", monitor_gym=monitor_gym)
+        config = wandb.config
     overwrote_something_from_wandb = False
     if "lr" in config:
         lr = config.lr
@@ -378,13 +379,14 @@ def train_agent(
         # log the average episode length and average reward
         episode_len = batch_size / max(1, buffer.dones.sum().item())
         episode_len_exp_avg.append(episode_len)
-        wandb.log({
-            "episode_len": episode_len,
-            "episode_len_exp_avg": episode_len_exp_avg.exp_average(),
-            "action": buffer.act.float().mean().item(),
-            "reward": buffer.rew.mean().item(),
-        })
-        
+        if use_wandb:
+            wandb.log({
+                "episode_len": episode_len,
+                "episode_len_exp_avg": episode_len_exp_avg.exp_average(),
+                "action": buffer.act.float().mean().item(),
+                "reward": buffer.rew.mean().item(),
+            })
+            
         # estimate the empirical advantages and returns using GAE
         advantages = get_advantages(buffer, agent, discount, gae_lambda)
         returns = advantages + buffer.val
@@ -435,19 +437,20 @@ def train_agent(
         # log the average loss
         mean_loss = losses.mean().item()
         loss_exp_avg.append(mean_loss)
-        wandb.log({
-            "loss": mean_loss,
-            "loss_exp_avg": loss_exp_avg.exp_average(),
-            "actor_loss": actor_losses.mean().item(),
-            "critic_loss": critic_losses.mean().item(),
-            "entropy_loss": entropy_losses.mean().item(),
-        })
+        if use_wandb:
+            wandb.log({
+                "loss": mean_loss,
+                "loss_exp_avg": loss_exp_avg.exp_average(),
+                "actor_loss": actor_losses.mean().item(),
+                "critic_loss": critic_losses.mean().item(),
+                "entropy_loss": entropy_losses.mean().item(),
+            })
     
     return agent
 
 if __name__ == '__main__':
     include_visuals_in_wandb = False
-
+    use_wandb_=os.environ["USE_WANDB"]
     sweep_config = {
         # 'method': 'random',
         'method': 'grid',
@@ -489,7 +492,6 @@ if __name__ == '__main__':
                    render_mode='rgb_array' if include_visuals_in_wandb else None)
     if include_visuals_in_wandb:
         env = gym.wrappers.RecordVideo(env, "./videos")
-
     sweep_id = wandb.sweep(sweep_config, project="explainable-rl-iai")
     wandb.agent(sweep_id,
                 function=partial(train_agent, env),
