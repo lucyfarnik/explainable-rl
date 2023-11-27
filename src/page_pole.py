@@ -2,7 +2,7 @@ import streamlit as st
 import torch as T
 from time import sleep
 
-from src.component_property import properties, progress
+from src.component_property import properties
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 from src.ppo import train_agent
 
@@ -34,25 +34,17 @@ if "agent" not in st.session_state:
     st.session_state.agent = None
 
 
-# def handle_train_button():
-#     st.session_state.agent = None
-#     st.session_state.agent = train_agent(
-#         env=st.session_state.env,
-#     )
-
-
 # Training
 if st.button(
     label="Train Agent",
     key="train_button",
     help="Train an agent with the current settings.",
 ):
-    st.session_state.agent = None
-    st.session_state.agent = train_agent(
-        env=st.session_state.env,
-    )
-
-# bar = progress()
+    with st.spinner("Training agent..."):
+        st.session_state.agent = None
+        st.session_state.agent = train_agent(
+            env=st.session_state.env,
+        )
 
 
 # TODO move into components >>>
