@@ -1,4 +1,5 @@
 import streamlit as st
+import torch as T
 from time import sleep
 
 from src.component_property import properties, progress
@@ -6,7 +7,6 @@ from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 from src.ppo import train_agent
 
 st.title("Pole Balancing")
-
 
 with st.expander("Inputs"):
     tabs = st.tabs(["Cart Mass", "Pole Mass", "Gravity", "Friction", "Length", "Angle"])
@@ -34,21 +34,23 @@ if "agent" not in st.session_state:
     st.session_state.agent = None
 
 
-def handle_train_button():
-    pass
-    # st.session_state.agent = None
-    # st.session_state.agent = train_agent(
-    #     env=st.session_state.env,
-    # )
+# def handle_train_button():
+#     st.session_state.agent = None
+#     st.session_state.agent = train_agent(
+#         env=st.session_state.env,
+#     )
 
 
 # Training
-st.button(
+if st.button(
     label="Train Agent",
     key="train_button",
     help="Train an agent with the current settings.",
-    on_click=handle_train_button(),
-)
+):
+    st.session_state.agent = None
+    st.session_state.agent = train_agent(
+        env=st.session_state.env,
+    )
 
 # bar = progress()
 
@@ -76,9 +78,14 @@ if st.session_state["play"]:
     with st.empty():
         i = 0
         termination = False
+        obs = None
         while True:
-            action = i % 2
-            _, _, termination, _, _ = st.session_state.env.step(agent_action=action)
+            if obs is None:
+                action = i % 2
+            else:
+                probs, _ = st.session_state.agent(T.tensor(obs, dtype=T.float))
+                action = probs.argmax(dim=-1)
+            obs, _, termination, _, _ = st.session_state.env.step(agent_action=action)
             if termination:
                 st.session_state.env.reset()
             img = st.session_state.env.render()
