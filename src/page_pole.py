@@ -38,9 +38,24 @@ class Episode:
         return f"Episode: {self.outcome} - {self.length()} steps"
 
 
+# Initialise Session State
+for key in ["agent", "test_episodes"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
+
+# Construct Environment
+if "env" not in st.session_state:
+    # st.session_state.env = ConstructPoleBalancingEnv(max_iter=400, cartmass=5.0)
+    st.session_state.env = gym.make("CartPole-v1").unwrapped
+    st.session_state.env.reset()
+
+
+# Page Title
 st.title("Pole Balancing")
 
-with st.expander("Inputs"):
+# Inputs Section
+st.header("Inputs")
+with st.expander("Inputs", expanded=True):
     tabs = st.tabs(["Cart Mass", "Pole Mass", "Gravity", "Friction", "Length", "Angle"])
     with tabs[0]:
         cart_mass = properties("cart mass", min=0.5, max=5.0, default=1.0)
@@ -56,36 +71,27 @@ with st.expander("Inputs"):
         pole_start_angle = properties("angle", min=0.0, max=45.0, default=0.0)
 
 
-# Construct Environment
-if "env" not in st.session_state:
-    # st.session_state.env = ConstructPoleBalancingEnv(max_iter=400, cartmass=5.0)
-    st.session_state.env = gym.make("CartPole-v1").unwrapped
-    st.session_state.env.reset()
-
-
-if "agent" not in st.session_state:
-    st.session_state.agent = None
-
-
-# Training
+# Training Section
+st.header("Training")
 if st.button(
-    label="Train Agent",
+    label="Train Agent" if st.session_state.agent is None else "Re-train Agent",
     key="train_button",
     help="Train an agent with the current settings.",
 ):
-    with st.spinner("Training agent..."):  # TODO cache.
+    with st.spinner(
+        "Training agent with your environment parameters..."
+    ):  # TODO cache.
         # Delete previous agent and associated data
         for key in ["agent", "test_episodes"]:
-            if key in st.session_state:
-                del st.session_state[key]
+            st.session_state[key] = None
 
         st.session_state.agent = train_agent(
             env=st.session_state.env,
         )
 
-# st.write(st.session_state)
 
 # Testing
+st.header("Testing")
 if st.button(
     label="Test Agent",
     key="test_button",
@@ -122,29 +128,23 @@ if st.button(
                 break
         st.session_state.test_episodes.append(episode)
 
-if "test_episodes" in st.session_state:
-    st.selectbox(
-        "Select episode",
-        options=st.session_state.test_episodes,
-        key="test_episode_select",
-    )
 
 # TODO move into components >>>
-if "play" not in st.session_state:
-    st.session_state.play = False
+# if "play" not in st.session_state:
+#     st.session_state.play = False
 
 
-def handle_play_button():
-    st.session_state.play = not st.session_state.play
+# def handle_play_button():
+#     st.session_state.play = not st.session_state.play
 
 
 # Start/Button
-st.button(
-    label=("Stop" if st.session_state.play else "Play"),
-    key="play_button",
-    help="Press to stop and start the animation",
-    on_click=handle_play_button,
-)
+# st.button(
+#     label=("Stop" if st.session_state.play else "Play"),
+#     key="play_button",
+#     help="Press to stop and start the animation",
+#     on_click=handle_play_button,
+# )
 # <<<<
 
 # # Display environment
@@ -167,21 +167,26 @@ st.button(
 #             sleep(0.1)
 #             i += 1
 # else:
-if "test_episodes" in st.session_state:
+if st.session_state.test_episodes is not None:
+    st.selectbox(
+        "Select episode",
+        options=st.session_state.test_episodes,
+        key="test_episode_select",
+    )
     # episode_id: int = st.session_state.test_episode_select
     episode: Episode = st.session_state.test_episode_select
-    if not st.session_state.play:
-        step_idx = st.slider(
-            "Select step",
-            min_value=0,
-            max_value=len(episode.steps) - 1,
-        )
+    step_idx = st.slider(
+        "Select step",
+        min_value=0,
+        max_value=len(episode.steps) - 1,
+    )
     step: Step = episode.steps[step_idx]
     render_col, reward_col = st.columns([5, 1])
     with render_col:
         pos, vel, angle, _ = step.obs
+        action_text = ":arrow_left:" if step.action == 0 else ":arrow_right:"
         st.write(
-            f"Position: {pos:.2f} m | Velocity: {vel:.2f} m/s | Angle: {degrees(angle):.1f}°"
+            f"Position: {pos:.2f} m | Velocity: {vel:.2f} m/s | Angle: {degrees(angle):.1f}° || Action: {action_text}"
         )
         image = step.render
         st.image(
@@ -189,8 +194,6 @@ if "test_episodes" in st.session_state:
             caption="Pole World",
             use_column_width=True,
         )
-        action_text = ":arrow_left:" if step.action == 0 else ":arrow_right:"
-        st.write("Action:", action_text)
     with reward_col:
         c = (
             alt.Chart(pd.DataFrame({"Reward": [step.reward]}))
