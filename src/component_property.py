@@ -6,6 +6,11 @@ import pandas as pd
 
 
 def properties(name: str, min: float, max: float, default: float):
+    # Guard clause against int inputs
+    for arg in [min, max, default]:
+        if isinstance(arg, int):
+            arg = float(arg)
+
     col1, col2 = st.columns([2, 2])
     with col2:
         train_mean = st.slider(

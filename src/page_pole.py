@@ -1,53 +1,28 @@
-from math import degrees
-from numpy import ndarray
-import pandas as pd
-import streamlit as st
-import torch as T
 import altair as alt
-from time import sleep
-from stqdm import stqdm
-from dataclasses import dataclass, field
 import gymnasium as gym
+from math import degrees
+import pandas as pd
+from stqdm import stqdm
+import streamlit as st
+from time import sleep
+import torch as T
 
 from src.component_property import properties
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
+from src.logging import Episode, Step
 from src.ppo import train_agent
 
 
-@dataclass
-class Step:
-    time_step: int
-    obs: T.Tensor
-    reward: float
-    action: int
-    render: ndarray
-
-    def __str__(self) -> str:
-        return f"t={self.time_step}"
-
-
-@dataclass
-class Episode:
-    steps: list[Step] = field(default_factory=list)
-    outcome: str = field(default="")
-
-    def length(self) -> int:
-        return len(self.steps)
-
-    def __str__(self) -> str:
-        return f"Episode: {self.outcome} - {self.length()} steps"
-
-
 # Initialise Session State
-for key in ["agent", "test_episodes"]:
+for key in ["pole_agent", "pole_test_episodes"]:
     if key not in st.session_state:
         st.session_state[key] = None
 
 # Construct Environment
-if "env" not in st.session_state:
-    # st.session_state.env = ConstructPoleBalancingEnv(max_iter=400, cartmass=5.0)
-    st.session_state.env = gym.make("CartPole-v1").unwrapped
-    st.session_state.env.reset()
+if "pole_env" not in st.session_state:
+    # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400, cartmass=5.0)
+    st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
+    st.session_state.pole_env.reset()
 
 
 # Page Title
@@ -73,21 +48,28 @@ with st.expander("Inputs", expanded=True):
 
 # Training Section
 st.header("Training")
-if st.button(
-    label="Train Agent" if st.session_state.agent is None else "Re-train Agent",
-    key="train_button",
-    help="Train an agent with the current settings.",
-):
-    with st.spinner(
-        "Training agent with your environment parameters..."
-    ):  # TODO cache.
-        # Delete previous agent and associated data
-        for key in ["agent", "test_episodes"]:
-            st.session_state[key] = None
+train_button_col, train_result_col = st.columns([1, 4])
+with train_button_col:
+    if st.button(
+        label="Train Agent"
+        if st.session_state.pole_agent is None
+        else "Re-train Agent",
+        key="train_button",
+        help="Train an agent with the current settings.",
+    ):
+        with st.spinner(
+            "Training agent with your environment parameters..."
+        ):  # TODO cache.
+            # Delete previous agent and associated data
+            for key in ["pole_agent", "pole_test_episodes"]:
+                st.session_state[key] = None
 
-        st.session_state.agent = train_agent(
-            env=st.session_state.env,
-        )
+            st.session_state.pole_agent = train_agent(
+                env=st.session_state.pole_env,
+            )
+with train_result_col:
+    if st.session_state.pole_agent is not None:
+        st.write(st.session_state.pole_agent)
 
 
 # Testing
@@ -96,18 +78,18 @@ if st.button(
     label="Test Agent",
     key="test_button",
     help="Test the agent with the current settings.",
-    disabled=st.session_state.agent is None,
+    disabled=st.session_state.pole_agent is None,
 ):
-    st.session_state.test_episodes = []
+    st.session_state.pole_test_episodes = []
     for i in stqdm(range(10), desc="Testing agent"):
-        env: gym.Env = st.session_state.env
+        env: gym.Env = st.session_state.pole_env
         env.render_mode = "rgb_array"
         episode: Episode = Episode(outcome="Success")
-        obs, _ = st.session_state.env.reset()
+        obs, _ = st.session_state.pole_env.reset()
         termination = False
         for step in stqdm(range(400), desc="Step"):
             probs: T.Tensor
-            probs, _ = st.session_state.agent(T.tensor(obs, dtype=T.float))
+            probs, _ = st.session_state.pole_agent(T.tensor(obs, dtype=T.float))
             action = probs.argmax(dim=-1)
             action = action.item()
             # st.write(action)
@@ -123,10 +105,10 @@ if st.button(
                 )
             )
             if termination:
-                obs, _ = st.session_state.env.reset()
+                obs, _ = st.session_state.pole_env.reset()
                 episode.outcome = "Failure"
                 break
-        st.session_state.test_episodes.append(episode)
+        st.session_state.pole_test_episodes.append(episode)
 
 
 # TODO move into components >>>
@@ -157,20 +139,20 @@ if st.button(
 #             if obs is None:
 #                 action = i % 2
 #             else:
-#                 probs, _ = st.session_state.agent(T.tensor(obs, dtype=T.float))
+#                 probs, _ = st.session_state.pole_agent(T.tensor(obs, dtype=T.float))
 #                 action = probs.argmax(dim=-1)
-#             obs, _, termination, _, _ = st.session_state.env.step(agent_action=action)
+#             obs, _, termination, _, _ = st.session_state.pole_env.step(agent_action=action)
 #             if termination:
-#                 st.session_state.env.reset()
-#             img = st.session_state.env.render()
+#                 st.session_state.pole_env.reset()
+#             img = st.session_state.pole_env.render()
 #             st.image(image=img, caption="Pole World", use_column_width=True)
 #             sleep(0.1)
 #             i += 1
 # else:
-if st.session_state.test_episodes is not None:
+if st.session_state.pole_test_episodes is not None:
     st.selectbox(
         "Select episode",
-        options=st.session_state.test_episodes,
+        options=st.session_state.pole_test_episodes,
         key="test_episode_select",
     )
     # episode_id: int = st.session_state.test_episode_select
