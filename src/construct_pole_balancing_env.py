@@ -36,15 +36,15 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
     def __init__(
         self,
-        cartmass: float = 10.0,
-        masspole: float = 0.1,
-        gravity: float = 9.81,
-        friction: float = 0.0,
-        length: float = 0.5,
-        cart_x_position: float = 0,
-        cart_velocity: float = 0,
-        pole_angle: int = 0,
-        pole_velocity: float = 0,
+        cartmass: float | tuple[float, float] = 10.0,
+        masspole: float | tuple[float, float] = 0.1,
+        gravity: float | tuple[float, float] = 9.81,
+        friction: float | tuple[float, float] = 0.0,
+        length: float | tuple[float, float] = 0.5,
+        cart_x_position: float | tuple[float, float] = 0,
+        cart_velocity: float | tuple[float, float] = 0,
+        pole_angle: float | tuple[float, float] = 0,
+        pole_velocity: float | tuple[float, float] = 0,
         max_iter: int = 100,
         iteration: int = 0,
         maximum_buffer_size: int = 1000,
@@ -57,32 +57,42 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         Parameters
         ----------
-        cartmass : float
+        cartmass : float or tuple[float, float]
             Default value is 1 kg
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        masspole : float
+        masspole : float or tuple[float, float]
+            default value is 0.1 kg
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        gravity : float
+        gravity : float or tuple[float, float]
             default value is 9.81 N/kg
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        friction : float
+        friction : float or tuple[float, float]
             default value is frictionless
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        length : float
+        length : float or tuple[float, float]
             default value is 0.3 meters
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        cart_x_postion : float
+        cart_x_postion : float or tuple[float, float]
             default to the centre of the grid. The centre of the cart is at
             the x coordinate 0
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        cart_velocity : float
+        cart_velocity : float or tuple[float, float]
             defaults to stationary
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        pole_angle : int
+        pole_angle : float or tuple[float, float]
             defaults to balanced
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
-        pole_velocity : float
+        pole_velocity : float or tuple[float, float]
             defaults to stationary
+            Can take a single value, or a tuple of mean and std for a normal distribution
 
         max_iter : int
             default to 100 iterations
@@ -97,13 +107,69 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         """
         super().__init__(render_mode)
-        self.cartmass = cartmass
-        self.masspole = masspole
-        self.friction = friction
-        self.gravity = gravity
-        self.force_mag = force_mag
-        self.length = length
+        
+        if type(cartmass) is tuple:
+            self.cartmass_dist = cartmass
+            self.cartmass = np.random.normal(*cartmass)
+        else:
+            self.cartmass_dist = None
+            self.cartmass = cartmass
+        
+        if type(masspole) is tuple:
+            self.masspole_dist = masspole
+            self.masspole = np.random.normal(*masspole)
+        else:
+            self.masspole_dist = None
+            self.masspole = masspole
+        
+        if type(gravity) is tuple:
+            self.gravity_dist = gravity
+            self.gravity = np.random.normal(*gravity)
+        else:
+            self.gravity_dist = None
+            self.gravity = gravity
+        
+        if type(friction) is tuple:
+            self.friction_dist = friction
+            self.friction = np.random.normal(*friction)
+        else:
+            self.friction_dist = None
+            self.friction = friction
+        
+        if type(length) is tuple:
+            self.length_dist = length
+            self.length = np.random.normal(*length)
+        else:
+            self.length_dist = None
+            self.length = length
+        
+        if type(cart_x_position) is tuple:
+            self.cart_x_position_dist = cart_x_position
+            cart_x_position = np.random.normal(*cart_x_position)
+        else:
+            self.cart_x_position_dist = None
+        
+        if type(cart_velocity) is tuple:
+            self.cart_velocity_dist = cart_velocity
+            cart_velocity = np.random.normal(*cart_velocity)
+        else:
+            self.cart_velocity_dist = None
+        
+        if type(pole_angle) is tuple:
+            self.pole_angle_dist = pole_angle
+            pole_angle = np.random.normal(*pole_angle)
+        else:
+            self.pole_angle_dist = None
+        
+        if type(pole_velocity) is tuple:
+            self.pole_velocity_dist = pole_velocity
+            pole_velocity = np.random.normal(*pole_velocity)
+        else:
+            self.pole_velocity_dist = None
+        
         self.state = [cart_x_position, cart_velocity, pole_angle, pole_velocity]
+        
+        self.force_mag = force_mag
         self.max_iter = max_iter
         self.iteration = iteration
         self.maximum_buffer_size = maximum_buffer_size
@@ -230,4 +296,24 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
     def reset(self, *args, **kwargs):
         self.iteration = 0
-        return super().reset(*args, **kwargs)
+        super().reset(*args, **kwargs)
+        if self.cartmass_dist is not None:
+            self.cartmass = np.random.normal(*self.cartmass_dist)
+        if self.masspole_dist is not None:
+            self.masspole = np.random.normal(*self.masspole_dist)
+        if self.gravity_dist is not None:
+            self.gravity = np.random.normal(*self.gravity_dist)
+        if self.friction_dist is not None:
+            self.friction = np.random.normal(*self.friction_dist)
+        if self.length_dist is not None:
+            self.length = np.random.normal(*self.length_dist)
+        if self.cart_x_position_dist is not None:
+            self.state[0] = np.random.normal(*self.cart_x_position_dist)
+        if self.cart_velocity_dist is not None:
+            self.state[1] = np.random.normal(*self.cart_velocity_dist)
+        if self.pole_angle_dist is not None:
+            self.state[2] = np.random.normal(*self.pole_angle_dist)
+        if self.pole_velocity_dist is not None:
+            self.state[3] = np.random.normal(*self.pole_velocity_dist)    
+
+        return np.array(self.state, dtype=np.float32), {}
