@@ -270,7 +270,7 @@ def train_agent(
     # depend on the batch size because of integer division, and then
     # the sweep comparisons wouldn't be fair
     # n_timesteps=8388608,  # 2^23,
-    n_timesteps=2**18,  # faster for testing
+    n_timesteps=2**16,  # faster for testing
     n_epochs_per_episode=8,  # 2^3
     gae_lambda=0.95,
     clip_eps=0.2,
