@@ -75,7 +75,7 @@ class MazeEnv(MiniGridEnv):
         Returns:
             str: The mission as a human-readable string.
         """
-        return "Solve the Maze"
+        return "pick up the yellow box"
 
     def _gen_grid(self, width, height):
         """
@@ -121,3 +121,6 @@ class MazeEnv(MiniGridEnv):
             self.agent_dir = self.agent_start_dir
         else:
             self.place_agent()
+
+    def step(self, action):
+        observation, reward, terminated, truncated, info = super().step(action)
