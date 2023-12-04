@@ -7,6 +7,15 @@ import pandas as pd
 from src.parameter import Parameter
 
 
+def input_section(parameters: list[Parameter]):
+    st.header("Inputs")
+    with st.expander("Inputs", expanded=True):
+        tabs = st.tabs([param.name for param in parameters])
+        for i, param in enumerate(parameters):
+            with tabs[i]:
+                properties(param)
+
+
 def properties(parameter: Parameter):
     # # Guard clause against int inputs
     # for arg in [min, max, default]:
