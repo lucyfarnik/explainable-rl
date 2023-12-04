@@ -4,58 +4,63 @@ import numpy as np
 import scipy as sp
 import pandas as pd
 
+from src.parameter import Parameter
 
-def properties(name: str, min: float, max: float, default: float):
-    # Guard clause against int inputs
-    for arg in [min, max, default]:
-        if isinstance(arg, int):
-            arg = float(arg)
+
+def properties(parameter: Parameter):
+    # # Guard clause against int inputs
+    # for arg in [min, max, default]:
+    #     if isinstance(arg, int):
+    #         arg = float(arg)
 
     col1, col2 = st.columns([2, 2])
     with col2:
         train_mean = st.slider(
-            label=f"Select a mean {name} for training set",
-            min_value=min,
-            value=default,
-            max_value=max,
-            key=f"{name}_train_mean",
+            label=f"Select a mean {parameter.name.lower()} for training set",
+            min_value=parameter.min,
+            value=parameter.default,
+            max_value=parameter.max,
+            key=f"{parameter.key}_train_mean",
             step=0.01,
         )
 
         train_std_dev = st.slider(
             label="Select a std dev for training set",
             min_value=0.01,
-            value=default * 0.2 or 0.1,  # approx. "Or 0.1" in case default is 0.
-            max_value=max,
-            key=f"{name}_train_std_dev",
+            value=parameter.default * 0.2
+            or 0.1,  # approx. "Or 0.1" in case default is 0.
+            max_value=parameter.max,
+            key=f"{parameter.key}_train_std_dev",
             step=0.01,
         )
 
         test_mean = st.slider(
-            label=f"Select a mean {name} for test set",
-            min_value=min,
-            value=default,
-            max_value=max,
-            key=f"{name}_test_mean",
+            label=f"Select a mean {parameter.name.lower()} for test set",
+            min_value=parameter.min,
+            value=parameter.default,
+            max_value=parameter.max,
+            key=f"{parameter.key}_test_mean",
         )
 
         test_std_dev = st.slider(
             label="Select a std dev for test set",
             min_value=0.01,
-            value=default * 0.2 or 0.1,  # approx. "Or 0.1" in case default is 0.
-            max_value=max,
-            key=f"{name}_test_std_dev",
+            value=parameter.default * 0.2
+            or 0.1,  # approx. "Or 0.1" in case default is 0.
+            max_value=parameter.max,
+            key=f"{parameter.key}_test_std_dev",
             step=0.01,
         )
 
     with col1:
-        st.subheader(name.capitalize())
-        x = np.linspace(min, max, 100)
+        st.subheader(parameter.name_with_unit)
+        x = np.linspace(parameter.min, parameter.max, 100)
         train_distribution = sp.stats.norm.pdf(x, loc=train_mean, scale=train_std_dev)
         test_distribution = sp.stats.norm.pdf(x, loc=test_mean, scale=test_std_dev)
+        x_label = parameter.name_with_unit
         data = pd.DataFrame(
             {
-                "x": x,
+                x_label: x,
                 "Train": train_distribution,
                 "Test": test_distribution,
             }
@@ -64,7 +69,7 @@ def properties(name: str, min: float, max: float, default: float):
         # fig1 = sb.lineplot(x=x, y=train_distribution, label="Train")
         # sb.lineplot(x=x, y=test_distribution, label="Test")
         # st.pyplot(plt)
-        st.line_chart(data, x="x", y=["Train", "Test"])
+        st.line_chart(data, x=x_label, y=["Train", "Test"])
 
     return train_mean, train_std_dev, test_mean, test_std_dev
 

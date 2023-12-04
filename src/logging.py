@@ -18,10 +18,14 @@ class Step:
 @dataclass
 class Episode:
     steps: list[Step] = field(default_factory=list)
+    parameters: dict[str, float] = field(default_factory=dict)
     outcome: str = field(default="")
 
     def length(self) -> int:
         return len(self.steps)
 
     def __str__(self) -> str:
+        parameter_string = ", ".join(
+            [f"{key}={value:.2f}" for key, value in self.parameters.items()]
+        )
         return f"Episode: {self.outcome} - {self.length()} steps"

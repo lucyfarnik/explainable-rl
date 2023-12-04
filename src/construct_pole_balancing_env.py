@@ -36,7 +36,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
     def __init__(
         self,
-        cartmass: float | tuple[float, float] = 10.0,
+        cartmass: float | tuple[float, float] = 1.0,
         masspole: float | tuple[float, float] = 0.1,
         gravity: float | tuple[float, float] = 9.81,
         friction: float | tuple[float, float] = 0.0,
@@ -107,68 +107,68 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
 
         """
         super().__init__(render_mode)
-        
+
         if type(cartmass) is tuple:
             self.cartmass_dist = cartmass
             self.cartmass = np.random.normal(*cartmass)
         else:
             self.cartmass_dist = None
             self.cartmass = cartmass
-        
+
         if type(masspole) is tuple:
             self.masspole_dist = masspole
             self.masspole = np.random.normal(*masspole)
         else:
             self.masspole_dist = None
             self.masspole = masspole
-        
+
         if type(gravity) is tuple:
             self.gravity_dist = gravity
             self.gravity = np.random.normal(*gravity)
         else:
             self.gravity_dist = None
             self.gravity = gravity
-        
+
         if type(friction) is tuple:
             self.friction_dist = friction
             self.friction = np.random.normal(*friction)
         else:
             self.friction_dist = None
             self.friction = friction
-        
+
         if type(length) is tuple:
             self.length_dist = length
             self.length = np.random.normal(*length)
         else:
             self.length_dist = None
             self.length = length
-        
+
         if type(cart_x_position) is tuple:
             self.cart_x_position_dist = cart_x_position
             cart_x_position = np.random.normal(*cart_x_position)
         else:
             self.cart_x_position_dist = None
-        
+
         if type(cart_velocity) is tuple:
             self.cart_velocity_dist = cart_velocity
             cart_velocity = np.random.normal(*cart_velocity)
         else:
             self.cart_velocity_dist = None
-        
+
         if type(pole_angle) is tuple:
             self.pole_angle_dist = pole_angle
             pole_angle = np.random.normal(*pole_angle)
         else:
             self.pole_angle_dist = None
-        
+
         if type(pole_velocity) is tuple:
             self.pole_velocity_dist = pole_velocity
             pole_velocity = np.random.normal(*pole_velocity)
         else:
             self.pole_velocity_dist = None
-        
+
         self.state = [cart_x_position, cart_velocity, pole_angle, pole_velocity]
-        
+
         self.force_mag = force_mag
         self.max_iter = max_iter
         self.iteration = iteration
@@ -176,7 +176,8 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         self.prev_angle = None
 
     def return_reward(self, agent_action: float) -> float:
-        return -1 * abs(self.state[2])
+        # return -1 * abs(self.state[2])
+        return math.radians(90) - abs(self.state[2])
 
         # if the last observed angle of the pole is greater is than second to
         # to last observed pole angle i.e. the RL agent caused the pole to
@@ -229,7 +230,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         force = force - self.friction
 
         total_mass = self.masspole + self.cartmass
-        pole_mass_length = self.masspole * self.length
+        pole_mass_length = self.masspole * self.length / 2
 
         # intermediate variable to faciliate computation of the acc
         temp = (
@@ -314,6 +315,6 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         if self.pole_angle_dist is not None:
             self.state[2] = np.random.normal(*self.pole_angle_dist)
         if self.pole_velocity_dist is not None:
-            self.state[3] = np.random.normal(*self.pole_velocity_dist)    
+            self.state[3] = np.random.normal(*self.pole_velocity_dist)
 
         return np.array(self.state, dtype=np.float32), {}

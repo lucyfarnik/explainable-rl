@@ -9,20 +9,42 @@ import torch as T
 
 from src.component_property import properties
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
+from src.pole_env import PoleEnv
 from src.logging import Episode, Step
+from src.parameter import Parameter
 from src.ppo import train_agent
+
+PARAMETERS = [
+    Parameter(name="Gravity", default=9.81, min=0.1, max=20.0, unit="m/s^2"),
+    Parameter(
+        name="Cart Mass", default=1.0, min=0.5, max=5.0, unit="kg", lib_ref="masscart"
+    ),
+    Parameter(
+        name="Pole Mass", default=0.1, min=0.1, max=1.0, unit="kg", lib_ref="masspole"
+    ),
+    Parameter(name="Length", default=0.5, min=0.0, max=1.0, unit="m"),
+    Parameter(
+        name="Force Magnitude",
+        default=10.0,
+        min=1.0,
+        max=20.0,
+        unit="N",
+        lib_ref="force_mag",
+    ),
+]
 
 
 # Initialise Session State
-for key in ["pole_agent", "pole_test_episodes"]:
+for key in ["pole_agent", "pole_test_episodes", "pole_env"]:
     if key not in st.session_state:
         st.session_state[key] = None
 
 # Construct Environment
-if "pole_env" not in st.session_state:
-    # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400, cartmass=5.0)
-    st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
-    st.session_state.pole_env.reset()
+# if "pole_env" not in st.session_state:
+#     # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400)
+#     st.session_state.pole_env = PoleEnv()
+#     # st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
+#     st.session_state.pole_env.reset()
 
 
 # Page Title
@@ -31,20 +53,28 @@ st.title("Pole Balancing")
 # Inputs Section
 st.header("Inputs")
 with st.expander("Inputs", expanded=True):
-    tabs = st.tabs(["Cart Mass", "Pole Mass", "Gravity", "Friction", "Length", "Angle"])
-    with tabs[0]:
-        cart_mass = properties("cart mass", min=0.5, max=5.0, default=1.0)
-    with tabs[1]:
-        pole_mass = properties("pole mass", min=0.1, max=1.0, default=0.1)
-    with tabs[2]:
-        gravity = properties("gravity", min=0.1, max=20.0, default=9.81)
-    with tabs[3]:
-        friction = properties("friction", min=0.0, max=1.0, default=0.0)
-    with tabs[4]:
-        length = properties("length", min=0.0, max=1.0, default=0.5)
-    with tabs[5]:
-        pole_start_angle = properties("angle", min=0.0, max=45.0, default=0.0)
-
+    tabs = st.tabs([param.name for param in PARAMETERS])
+    for i, param in enumerate(PARAMETERS):
+        with tabs[i]:
+            properties(
+                param
+                # param.key,
+                # min=param.min,
+                # max=param.max,
+                # default=param.default,
+                # unit=param.unit,
+            )
+    # tabs = st.tabs(["Gravity", "Cart Mass", "Pole Mass", "Length", "Force Magnitude"])
+    # with tabs[0]:
+    #     gravity = properties("gravity", min=0.1, max=20.0, default=9.81)
+    # with tabs[1]:
+    #     cart_mass = properties("cart_mass", min=0.5, max=5.0, default=1.0)
+    # with tabs[2]:
+    #     pole_mass = properties("pole_mass", min=0.1, max=1.0, default=0.1)
+    # with tabs[3]:
+    #     length = properties("length", min=0.0, max=1.0, default=0.5)
+    # with tabs[4]:
+    #     friction = properties("force_mag", min=1.0, max=20.0, default=10.0)
 
 # Training Section
 st.header("Training")
@@ -63,10 +93,34 @@ with train_button_col:
             # Delete previous agent and associated data
             for key in ["pole_agent", "pole_test_episodes"]:
                 st.session_state[key] = None
-
-            st.session_state.pole_agent = train_agent(
-                env=st.session_state.pole_env,
+            # Make environment
+            env = PoleEnv(
+                gravity=(
+                    st.session_state.gravity_train_mean,
+                    st.session_state.gravity_train_std_dev,
+                ),
+                mass_cart=(
+                    st.session_state.cart_mass_train_mean,
+                    st.session_state.cart_mass_train_std_dev,
+                ),
+                mass_pole=(
+                    st.session_state.pole_mass_train_mean,
+                    st.session_state.pole_mass_train_std_dev,
+                ),
+                length=(
+                    st.session_state.length_train_mean,
+                    st.session_state.length_train_std_dev,
+                ),
+                force_mag=(
+                    st.session_state.force_magnitude_train_mean,
+                    st.session_state.force_magnitude_train_std_dev,
+                ),
             )
+            # Train agent
+            st.session_state.pole_agent = train_agent(env)
+            # Store environment in session state
+            st.session_state.pole_env = env
+
 with train_result_col:
     if st.session_state.pole_agent is not None:
         st.write(st.session_state.pole_agent)
@@ -80,12 +134,38 @@ if st.button(
     help="Test the agent with the current settings.",
     disabled=st.session_state.pole_agent is None,
 ):
+    # Make environment
+    env: gym.Env = PoleEnv(
+        gravity=(
+            st.session_state.gravity_test_mean,
+            st.session_state.gravity_test_std_dev,
+        ),
+        mass_cart=(
+            st.session_state.cart_mass_test_mean,
+            st.session_state.cart_mass_test_std_dev,
+        ),
+        mass_pole=(
+            st.session_state.pole_mass_test_mean,
+            st.session_state.pole_mass_test_std_dev,
+        ),
+        length=(
+            st.session_state.length_test_mean,
+            st.session_state.length_test_std_dev,
+        ),
+        force_mag=(
+            st.session_state.force_magnitude_test_mean,
+            st.session_state.force_magnitude_test_std_dev,
+        ),
+    )
     st.session_state.pole_test_episodes = []
     for i in stqdm(range(10), desc="Testing agent"):
-        env: gym.Env = st.session_state.pole_env
-        env.render_mode = "rgb_array"
         episode: Episode = Episode(outcome="Success")
-        obs, _ = st.session_state.pole_env.reset()
+        obs, _ = env.reset()
+        episode.parameters = {
+            param.name_with_unit: getattr(env, param.get_lib_ref())
+            for param in PARAMETERS
+        }
+
         termination = False
         for step in stqdm(range(400), desc="Step"):
             probs: T.Tensor
@@ -157,6 +237,11 @@ if st.session_state.pole_test_episodes is not None:
     )
     # episode_id: int = st.session_state.test_episode_select
     episode: Episode = st.session_state.test_episode_select
+
+    # Show episode parameters
+    param_df = pd.DataFrame.from_records([episode.parameters])
+    st.write(param_df)
+
     step_idx = st.slider(
         "Select step",
         min_value=0,
