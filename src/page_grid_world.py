@@ -7,13 +7,17 @@ import streamlit as st
 from time import sleep
 from torch import Tensor, tensor
 
-from src.component_property import properties
+from src import components
 from src.logging import Episode, Step
 from src.maze_env import MazeEnv
+from src.parameter import Parameter
 from src.ppo import train_agent
 
 
 POSSIBLE_ACTIONS = [Actions.forward, Actions.left, Actions.right]
+MAZE_PARAMETERS = [
+    Parameter("Maze Size", default=10.0, min=5.0, max=50.0, unit="corridors across")
+]
 
 
 def create_maze(size):
@@ -24,49 +28,39 @@ def create_maze(size):
             render_mode="rgb_array",
         )
     )
-    env.reset()
-    return env
+    obs, _ = env.reset()
+    st.write(obs["image"])
+    return env.unwrapped
 
 
 # Initialise Session State
-if "maze_size" not in st.session_state:
-    st.session_state.maze_size = 10
+for key in ["maze_agent", "maze_test_episodes", "maze_env"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
 
-if "maze_env" not in st.session_state:
-    st.session_state.maze_env = create_maze(st.session_state.maze_size)
+# if "maze_size" not in st.session_state:
+#     st.session_state.maze_size = 10
 
-if "maze_agent" not in st.session_state:
-    st.session_state.maze_agent = None
+# if "maze_env" not in st.session_state:
+#     st.session_state.maze_env = create_maze(st.session_state.maze_size)
+
+# if "maze_agent" not in st.session_state:
+#     st.session_state.maze_agent = None
 
 # Page Title
 st.title("Grid World")
 
 
 # Inputs Section
-st.header("Inputs")
-with st.expander("Inputs"):  # Maze controls
-    tabs = st.tabs(["Maze Size", "Agent Start Position"])
-    with tabs[0]:
-        # st.slider(
-        #     label="Size",
-        #     min_value=5,
-        #     value=10,
-        #     max_value=50,
-        #     step=1,
-        #     key="maze_size",
-        #     on_change=create_maze(),
-        # )
-        properties("Size", 5.0, 50.0, 10.0)
-    with tabs[1]:
-        properties("X Position", 1.0, st.session_state.maze_size * 1.0, 1.0)
-        properties("Y Position", 1.0, st.session_state.maze_size * 1.0, 1.0)
-    # agent_x_pos, agent_y_pos = agent_position_select()
-    # (
-    #     position_train_mean,
-    #     position_train_std_dev,
-    #     position_test_mean,
-    #     position_test_std_dev,
-    # ) = properties("position", 0.01, 10.00)
+components.input_section(MAZE_PARAMETERS)
+
+# agent_x_pos, agent_y_pos = agent_position_select()
+# (
+#     position_train_mean,
+#     position_train_std_dev,
+#     position_test_mean,
+#     position_test_std_dev,
+# ) = properties("position", 0.01, 10.00)
 
 # Training Section
 st.header("Training")
@@ -81,9 +75,22 @@ if st.button(
         # Delete previous agent and associated data
         for key in ["maze_agent", "maze_test_episodes"]:
             st.session_state[key] = None
-        st.session_state.maze_agent = train_agent(
-            env=st.session_state.maze_env,
-        )
+
+        maze_size = round(st.session_state.maze_size_train_mean)
+        # Make environment
+        env = create_maze(maze_size)
+
+        # TODO: Get error when calling.
+        # Train agent throws an error saying it can't infer the dtype of a dict.
+        # The Maze Env passes a dict to the agent while the pole env passes an ndarray of 4 floats.
+        # Can the train agent work with a dict?
+        # Could override the MazeEnv step and reset mehtods to return an ndarray instead of a dict.
+        # https://github.com/Farama-Foundation/Minigrid/blob/master/minigrid/core/constants.py
+        # has the keys for the image in the MazeEnv dict.
+        st.session_state.maze_agent = train_agent(env)
+
+        # Store environment in session state
+        st.session_state.maze_env = env
 
 
 # Testing Section

@@ -7,7 +7,7 @@ import streamlit as st
 from time import sleep
 import torch as T
 
-from src.component_property import properties
+from src import components
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 from src.pole_env import PoleEnv
 from src.logging import Episode, Step
@@ -51,30 +51,7 @@ for key in ["pole_agent", "pole_test_episodes", "pole_env"]:
 st.title("Pole Balancing")
 
 # Inputs Section
-st.header("Inputs")
-with st.expander("Inputs", expanded=True):
-    tabs = st.tabs([param.name for param in PARAMETERS])
-    for i, param in enumerate(PARAMETERS):
-        with tabs[i]:
-            properties(
-                param
-                # param.key,
-                # min=param.min,
-                # max=param.max,
-                # default=param.default,
-                # unit=param.unit,
-            )
-    # tabs = st.tabs(["Gravity", "Cart Mass", "Pole Mass", "Length", "Force Magnitude"])
-    # with tabs[0]:
-    #     gravity = properties("gravity", min=0.1, max=20.0, default=9.81)
-    # with tabs[1]:
-    #     cart_mass = properties("cart_mass", min=0.5, max=5.0, default=1.0)
-    # with tabs[2]:
-    #     pole_mass = properties("pole_mass", min=0.1, max=1.0, default=0.1)
-    # with tabs[3]:
-    #     length = properties("length", min=0.0, max=1.0, default=0.5)
-    # with tabs[4]:
-    #     friction = properties("force_mag", min=1.0, max=20.0, default=10.0)
+components.input_section(PARAMETERS)
 
 # Training Section
 st.header("Training")
