@@ -81,4 +81,4 @@ def properties(parameter: Parameter) -> None:
         )
 
         # Plot graph
-        st.line_chart(data, x=x_label, y=["Train", "Test"]).
+        st.line_chart(data, x=x_label, y=["Train", "Test"])
