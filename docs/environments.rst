@@ -1,5 +1,5 @@
-Pole Balancing Environment
-==========================
+Environments
+============
 
 .. automodule:: src.construct_pole_balancing_env
    :members:

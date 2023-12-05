@@ -14,7 +14,7 @@ Welcome to Explainable Reinforcement Learning Dashboard's documentation!
    components
    environments
    logging
-   ppo
+   reinforcement_learning
 
 Indices and tables
 ==================

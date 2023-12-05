@@ -1,14 +1,6 @@
 """
 This module contains the functions required to construct the environment for 
-the RL agent to interact with. The following methods are included:
-    - env_params_setup (cart mass, pole mass, gravity, friction of the surface, pole length))
-    - state_space_define
-    - state_transition_function
-    - reward_function
-    - episode_loop
-    - env_reset
-
-@author: hn23952
+the RL agent to interact with.
 """
 import math
 import numpy as np
@@ -18,7 +10,7 @@ from gymnasium.envs.classic_control.cartpole import CartPoleEnv
 
 class ConstructPoleBalancingEnv(CartPoleEnv):
     """
-    Construtor function to create the environment for the RL task for pole-cart
+    Constructor function to create the environment for the RL task for pole-cart
     problem.
 
     - Initialise object by calling ConstructPoleBalancingEnv()
@@ -77,7 +69,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
             default value is 0.3 meters
             Can take a single value, or a tuple of mean and std for a normal distribution
 
-        cart_x_postion : float or tuple[float, float]
+        cart_x_position : float or tuple[float, float]
             default to the centre of the grid. The centre of the cart is at
             the x coordinate 0
             Can take a single value, or a tuple of mean and std for a normal distribution
@@ -232,7 +224,7 @@ class ConstructPoleBalancingEnv(CartPoleEnv):
         total_mass = self.masspole + self.cartmass
         pole_mass_length = self.masspole * self.length / 2
 
-        # intermediate variable to faciliate computation of the acc
+        # intermediate variable to facilitate computation of the acc
         temp = (
             force
             + pole_mass_length * pole_velocity**2 * np.sin(pole_angle)
