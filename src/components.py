@@ -1,9 +1,8 @@
 """Higher level components for the streamlit app."""
-import streamlit as st
 import numpy as np
-
-import scipy
 import pandas as pd
+import streamlit as st
+import scipy
 
 from src.parameter import Parameter
 
