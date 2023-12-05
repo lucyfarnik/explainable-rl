@@ -1,10 +1,22 @@
-import gymnasium
-import numpy as np
+"""A wrapper for the CartPole environment from gymnasium that allows the parameters to be sampled from distributions."""
 from gymnasium.envs.classic_control.cartpole import CartPoleEnv
-import streamlit as st
+import numpy as np
 
 
 class PoleEnv(CartPoleEnv):
+    """A wrapper for the CartPole environment from gymnasium that allows the parameters to be sampled from distributions.
+
+    Attributes:
+        gravity (tuple[float, float]): Gravity (m/s^2).
+        mass_cart (tuple[float, float]): Mass of the cart (kg).
+        mass_pole (tuple[float, float]): mass of the pole (kg).
+        length (tuple[float, float]): The length of the pole (m).
+        force_mag (tuple[float, float]): The magnitude of the force the agent can apply to the cart (either left or right) each time step (N).
+
+        For each attribute, you can specify a float or a tuple of floats. A float sets the value of the attribute to that value.
+        If providing a tuple, specify a (mean, std_dev) pair. The environment will sample from that normal distribution each time it is reset.
+    """
+
     def __init__(
         self,
         gravity: float | tuple[float, float] = 9.8,
