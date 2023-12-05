@@ -7,14 +7,13 @@ Todo:
 """
 from __future__ import annotations
 
-from minigrid.minigrid_env import MiniGridEnv
+from mazelib import Maze
+from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Wall, Goal  # , Door, Key #TODO
+from minigrid.minigrid_env import MiniGridEnv
 # from minigrid.core.constants import COLOR_NAMES # Used for doors and keys
-
-from mazelib import Maze
-from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 
 
 class MazeEnv(MiniGridEnv):
@@ -121,6 +120,3 @@ class MazeEnv(MiniGridEnv):
             self.agent_dir = self.agent_start_dir
         else:
             self.place_agent()
-
-    def step(self, action):
-        observation, reward, terminated, truncated, info = super().step(action)
