@@ -35,16 +35,16 @@ PARAMETERS = [
 
 
 # Initialise Session State
-for key in ["pole_agent", "pole_test_episodes", "pole_env"]:
+for key in ["pole_agent", "pole_test_episodes"]:
     if key not in st.session_state:
         st.session_state[key] = None
 
 # Construct Environment
-# if "pole_env" not in st.session_state:
-#     # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400)
-#     st.session_state.pole_env = PoleEnv()
-#     # st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
-#     st.session_state.pole_env.reset()
+if "pole_env" not in st.session_state:
+    # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400)
+    st.session_state.pole_env = PoleEnv()
+    # st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
+    st.session_state.pole_env.reset()
 
 
 # Page Title
@@ -71,28 +71,29 @@ with train_button_col:
             for key in ["pole_agent", "pole_test_episodes"]:
                 st.session_state[key] = None
             # Make environment
-            env = PoleEnv(
-                gravity=(
-                    st.session_state.gravity_train_mean,
-                    st.session_state.gravity_train_std_dev,
-                ),
-                mass_cart=(
-                    st.session_state.cart_mass_train_mean,
-                    st.session_state.cart_mass_train_std_dev,
-                ),
-                mass_pole=(
-                    st.session_state.pole_mass_train_mean,
-                    st.session_state.pole_mass_train_std_dev,
-                ),
-                length=(
-                    st.session_state.length_train_mean,
-                    st.session_state.length_train_std_dev,
-                ),
-                force_mag=(
-                    st.session_state.force_magnitude_train_mean,
-                    st.session_state.force_magnitude_train_std_dev,
-                ),
-            )
+            # env = PoleEnv(
+            #     gravity=(
+            #         st.session_state.gravity_train_mean,
+            #         st.session_state.gravity_train_std_dev,
+            #     ),
+            #     mass_cart=(
+            #         st.session_state.cart_mass_train_mean,
+            #         st.session_state.cart_mass_train_std_dev,
+            #     ),
+            #     mass_pole=(
+            #         st.session_state.pole_mass_train_mean,
+            #         st.session_state.pole_mass_train_std_dev,
+            #     ),
+            #     length=(
+            #         st.session_state.length_train_mean,
+            #         st.session_state.length_train_std_dev,
+            #     ),
+            #     force_mag=(
+            #         st.session_state.force_magnitude_train_mean,
+            #         st.session_state.force_magnitude_train_std_dev,
+            #     ),
+            # )
+            env = st.session_state.pole_env
             # Train agent
             st.session_state.pole_agent = train_agent(env)
             # Store environment in session state
