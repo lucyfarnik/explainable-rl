@@ -6,7 +6,7 @@ from torch import Tensor
 
 @dataclass
 class Step:
-    """_summary_
+    """A single time step of an episode. A collection of data from a single step of an agent in an environment.
 
     Attributes:
         time_step (int): The time step of the environment when the step was taken. (0-indexed). Ordinal, not in seconds.

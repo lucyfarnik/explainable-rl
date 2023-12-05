@@ -37,8 +37,7 @@ class Parameter:
 
     def get_lib_ref(self) -> str:
         """A getter function for the lib_ref attribute.
-            If the environment and the app use the same name for the parameter,
-            then the lib_ref attribute is not specified and this returns the key.
+        If the environment and the app use the same name for the parameter, then the lib_ref attribute is not specified and this returns the key.
 
         Returns:
             str: The lib_ref attribute or the key. E.g. "masspole" or "mass".

@@ -14,6 +14,7 @@ Welcome to Explainable Reinforcement Learning Dashboard's documentation!
    components
    environments
    logging
+   parameters
    reinforcement_learning
 
 Indices and tables
