@@ -15,11 +15,11 @@ def input_section(parameters: list[Parameter]) -> None:
         parameters (list[Parameter]): The parameters of the environment that the user can adjust.
     """
     st.header("Inputs")
-    with st.expander("Inputs", expanded=True):
-        tabs = st.tabs([param.name for param in parameters])
-        for i, param in enumerate(parameters):
-            with tabs[i]:
-                properties(param)
+    # with st.expander("Inputs", expanded=True):
+    tabs = st.tabs([param.name for param in parameters])
+    for i, param in enumerate(parameters):
+        with tabs[i]:
+            properties(param)
 
 
 def properties(parameter: Parameter) -> None:
