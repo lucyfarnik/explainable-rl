@@ -7,3 +7,9 @@ Mismatches between training environments and real-world applications often lead 
 Our interactive dashboard allows users to visually explore this concept by enabling the user to specify the training distribution with respect to certain parameters of an RL environment, and then train an agent on this distribution and observe its behavior off-distribution.
 
 See the docs on [GitHub Pages](https://iaitp.github.io/2023-The-Paper-Clippers/)
+
+## Installation
+1. Clone the repo:`git clone https://github.com/iaitp/2023-The-Paper-Clippers.git`
+2. Install the dependencies: `pip install -r requirements.txt`
+3. Run the Streamlit App: `streamlit run app.py`
+4. Open your web browser and navigate to [http://localhost.8501]
