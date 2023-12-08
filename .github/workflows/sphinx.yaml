@@ -27,7 +27,6 @@ jobs:
             cd ..
         - name: Run ghp-import
           run: |
-            pip show ghp-import
-            gph-import -n -p -f docs/_build/html
+            ghp-import --no-jekyll --push --force --no-history docs/_build/html
 
             
