@@ -25,8 +25,10 @@ jobs:
             cd docs
             make html
             cd ..
+        # Use the ghp-import package to automaticaly push the docs to the gh-pages branch
+        # ghp-import moves the built html files to the root of the gh-pages branch, creates a
+        # .nojekyll file, and pushes the changes to the remote gh-pages branch
         - name: Run ghp-import
-          run: |
-            ghp-import --no-jekyll --push --force --no-history docs/_build/html
+          run: ghp-import --no-jekyll --push --force --no-history docs/_build/html
 
             
