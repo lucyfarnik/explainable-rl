@@ -7,12 +7,15 @@ Todo:
 """
 from __future__ import annotations
 
+import gymnasium
 from mazelib import Maze
 from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Wall, Goal  # , Door, Key #TODO
 from minigrid.minigrid_env import MiniGridEnv
+from minigrid.wrappers import FullyObsWrapper
+
 # from minigrid.core.constants import COLOR_NAMES # Used for doors and keys
 
 
@@ -120,3 +123,25 @@ class MazeEnv(MiniGridEnv):
             self.agent_dir = self.agent_start_dir
         else:
             self.place_agent()
+
+
+def create_maze(size) -> gymnasium.Env:
+    """Creates a fully observable maze environment.
+    Arguments:
+        size (int): The width and height of the maze in corridors.
+        The maze will be bigger because of the walls.
+        E.g. if a maze is 5 corridors across, there will be 4 walls between and 1 on either side
+        so the maze will be 11 squares across.
+
+    Returns:
+        MazeEnv(gym.Env): The fully observable maze environment.
+    """
+    env = FullyObsWrapper(
+        MazeEnv(
+            width=size,
+            height=size,
+            render_mode="rgb_array",
+        )
+    )
+    _, _ = env.reset()
+    return env

@@ -1,14 +1,13 @@
 """The Grid World page of the Streamlit app."""
 import gymnasium as gym
 from minigrid.core.actions import Actions
-from minigrid.wrappers import FullyObsWrapper
 from stqdm import stqdm
 import streamlit as st
 from torch import Tensor, tensor
 
 from src import components
 from src.logging import Episode, Step
-from src.maze_env import MazeEnv
+from src.maze_env import create_maze
 from src.parameter import Parameter
 from src.ppo import train_agent
 
@@ -17,29 +16,6 @@ POSSIBLE_ACTIONS = [Actions.forward, Actions.left, Actions.right]
 MAZE_PARAMETERS = [
     Parameter("Maze Size", default=10.0, min=5.0, max=50.0, unit="corridors across")
 ]
-
-
-def create_maze(size) -> gym.Env:
-    """Creates a fully observable maze environment.
-    Arguments:
-        size (int): The width and height of the maze in corridors.
-        The maze will be bigger because of the walls.
-        E.g. if a maze is 5 corridors across, there will be 4 walls between and 1 on either side
-        so the maze will be 11 squares across.
-
-    Returns:
-        MazeEnv(gym.Env): The fully observable maze environment.
-    """
-    env = FullyObsWrapper(
-        MazeEnv(
-            width=size,
-            height=size,
-            render_mode="rgb_array",
-        )
-    )
-    obs, _ = env.reset()
-    st.write(obs["image"])  # Debugging
-    return env.unwrapped
 
 
 def page_grid_world():

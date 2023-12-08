@@ -3,6 +3,7 @@ import altair as alt
 import gymnasium as gym
 from math import degrees
 import pandas as pd
+import scipy
 from stqdm import stqdm
 import streamlit as st
 import torch as T
@@ -41,13 +42,6 @@ def page_pole():
         if key not in st.session_state:
             st.session_state[key] = None
 
-    # Construct Environment
-    if "pole_env" not in st.session_state:
-        # st.session_state.pole_env = ConstructPoleBalancingEnv(max_iter=400)
-        st.session_state.pole_env = PoleEnv()
-        # st.session_state.pole_env = gym.make("CartPole-v1").unwrapped
-        st.session_state.pole_env.reset()
-
     # Page Title
     st.title("Pole Balancing")
 
@@ -72,33 +66,31 @@ def page_pole():
                 for key in ["pole_agent", "pole_test_episodes"]:
                     st.session_state[key] = None
                 # Make environment
-                # env = PoleEnv(
-                #     gravity=(
-                #         st.session_state.gravity_train_mean,
-                #         st.session_state.gravity_train_std_dev,
-                #     ),
-                #     mass_cart=(
-                #         st.session_state.cart_mass_train_mean,
-                #         st.session_state.cart_mass_train_std_dev,
-                #     ),
-                #     mass_pole=(
-                #         st.session_state.pole_mass_train_mean,
-                #         st.session_state.pole_mass_train_std_dev,
-                #     ),
-                #     length=(
-                #         st.session_state.length_train_mean,
-                #         st.session_state.length_train_std_dev,
-                #     ),
-                #     force_mag=(
-                #         st.session_state.force_magnitude_train_mean,
-                #         st.session_state.force_magnitude_train_std_dev,
-                #     ),
-                # )
-                env = st.session_state.pole_env
+                env = PoleEnv(
+                    gravity=(
+                        st.session_state.gravity_train_mean,
+                        st.session_state.gravity_train_std_dev,
+                    ),
+                    mass_cart=(
+                        st.session_state.cart_mass_train_mean,
+                        st.session_state.cart_mass_train_std_dev,
+                    ),
+                    mass_pole=(
+                        st.session_state.pole_mass_train_mean,
+                        st.session_state.pole_mass_train_std_dev,
+                    ),
+                    length=(
+                        st.session_state.length_train_mean,
+                        st.session_state.length_train_std_dev,
+                    ),
+                    force_mag=(
+                        st.session_state.force_magnitude_train_mean,
+                        st.session_state.force_magnitude_train_std_dev,
+                    ),
+                )
+
                 # Train agent
                 st.session_state.pole_agent = train_agent(env)
-                # Store environment in session state
-                st.session_state.pole_env = env
 
     with train_result_col:
         if st.session_state.pole_agent is not None:
@@ -150,8 +142,6 @@ def page_pole():
                 probs, _ = st.session_state.pole_agent(T.tensor(obs, dtype=T.float))
                 action = probs.argmax(dim=-1)
                 action = action.item()
-                # st.write(action)
-                # obs, reward, termination, _, _ = env.step(agent_action=action)
                 obs, reward, termination, _, _ = env.step(action)
                 episode.steps.append(
                     Step(
@@ -163,7 +153,7 @@ def page_pole():
                     )
                 )
                 if termination:
-                    obs, _ = st.session_state.pole_env.reset()
+                    obs, _ = env.reset()
                     episode.outcome = "Failure"
                     break
             st.session_state.pole_test_episodes.append(episode)
@@ -212,6 +202,8 @@ def page_pole():
         )
         # episode_id: int = st.session_state.test_episode_select
         episode: Episode = st.session_state.test_episode_select
+
+        # z_scores = scipy.stats.zscore([param for param in episode.parameters.values()])
 
         # Show episode parameters
         param_df = pd.DataFrame.from_records([episode.parameters])
