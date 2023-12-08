@@ -4,8 +4,9 @@ mazelib
 moviepy
 minigrid
 numpy
+scipy
 st-pages
 stqdm
 streamlit
 torch
-wanb
+wandb

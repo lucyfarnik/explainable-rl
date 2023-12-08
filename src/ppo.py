@@ -10,9 +10,9 @@ import torch.optim as optim
 from typing import Optional, Union, Tuple
 from typing_extensions import Self
 from tqdm import tqdm
-from utils import MovingAverage
 import wandb
 
+from src.utils import MovingAverage
 from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 
 # device = T.device("mps" if T.backends.mps.is_available() else "cpu")
