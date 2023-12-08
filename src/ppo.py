@@ -1,18 +1,19 @@
+from functools import partial
+import gymnasium as gym
+from jaxtyping import Float
 import numpy as np
 import torch as T
 from torch import Tensor
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import gymnasium as gym
-import wandb
-from jaxtyping import Float
-from functools import partial
 from typing import Optional, Union, Tuple
 from typing_extensions import Self
 from tqdm import tqdm
-from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 from utils import MovingAverage
+import wandb
+
+from src.construct_pole_balancing_env import ConstructPoleBalancingEnv
 
 # device = T.device("mps" if T.backends.mps.is_available() else "cpu")
 device = T.device("cpu")  # right now the network is too small to benefit from GPUs
@@ -270,7 +271,7 @@ def train_agent(
     # depend on the batch size because of integer division, and then
     # the sweep comparisons wouldn't be fair
     # n_timesteps=8388608,  # 2^23,
-    n_timesteps=2**18,  # faster for testing
+    n_timesteps=2**16,  # faster for testing
     n_epochs_per_episode=8,  # 2^3
     gae_lambda=0.95,
     clip_eps=0.2,
@@ -377,29 +378,6 @@ def train_agent(
     agent = Agent(d_obs, n_act, hidden_dims, device=device)
     optimizer = optim.Adam(agent.parameters(), lr=lr)
     buffer = ReplayBuffer(batch_size, d_obs, device=device)
-
-    # initialize wandb
-    # run = wandb.init(
-    #     project="explainable-rl-iai",
-    #     config={
-    #         "discount": discount,
-    #         "d_obs": d_obs,
-    #         "n_act": n_act,
-    #         "hidden_dims": hidden_dims,
-    #         "batch_size": batch_size,
-    #         "mini_batch_size": mini_batch_size,
-    #         "lr": lr,
-    #         "n_timesteps": n_timesteps,
-    #         "n_epochs_per_episode": n_epochs_per_episode,
-    #         "gae_lambda": gae_lambda,
-    #         "clip_eps": clip_eps,
-    #         "critic_loss_coef": critic_loss_coef,
-    #         "entropy_loss_coef": entropy_loss_coef,
-    #         "entropy_eps": entropy_eps,
-    #         "env_name": env.__class__.__name__,
-    #     },
-    #     monitor_gym=monitor_gym,
-    # )
 
     n_episodes = n_timesteps // batch_size
     episode_len_exp_avg = MovingAverage(

@@ -7,14 +7,13 @@ Todo:
 """
 from __future__ import annotations
 
-from minigrid.minigrid_env import MiniGridEnv
+from mazelib import Maze
+from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Wall, Goal  # , Door, Key #TODO
+from minigrid.minigrid_env import MiniGridEnv
 # from minigrid.core.constants import COLOR_NAMES # Used for doors and keys
-
-from mazelib import Maze
-from mazelib.generate.DungeonRooms import DungeonRooms  # TODO add options
 
 
 class MazeEnv(MiniGridEnv):
@@ -75,7 +74,7 @@ class MazeEnv(MiniGridEnv):
         Returns:
             str: The mission as a human-readable string.
         """
-        return "Solve the Maze"
+        return "pick up the yellow box"
 
     def _gen_grid(self, width, height):
         """
