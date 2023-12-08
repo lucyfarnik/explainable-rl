@@ -2,7 +2,8 @@
 import gymnasium as gym
 from minigrid.core.actions import Actions
 from minigrid.wrappers import FullyObsWrapper
-from stqdm import stqdm
+
+# from stqdm import stqdm
 import streamlit as st
 from torch import Tensor, tensor
 
@@ -37,9 +38,9 @@ def create_maze(size) -> gym.Env:
             render_mode="rgb_array",
         )
     )
-    obs, _ = env.reset()
-    st.write(obs["image"])  # Debugging
-    return env.unwrapped
+    obs, _ = env.unwrapped.reset()
+    # st.write(obs["image"])  # Debugging
+    return env
 
 
 def page_grid_world():
@@ -94,12 +95,12 @@ def page_grid_world():
         disabled=st.session_state.maze_agent is None,
     ):
         st.session_state.train_test_episodes = []
-        for i in stqdm(range(10), desc="Testing agent"):
+        for i in range(10):
             env: gym.Env = st.session_state.env
             episode: Episode = Episode(outcome="Success")
             obs, _ = st.session_state.env.reset()
             termination = False
-            for step in stqdm(range(400), desc="Step"):
+            for step in range(400):
                 probs: Tensor
                 probs, _ = st.session_state.pole_agent(tensor(obs, dtype=Tensor.float))
                 action = probs.argmax(dim=-1)

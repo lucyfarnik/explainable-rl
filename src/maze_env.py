@@ -13,6 +13,7 @@ from minigrid.core.grid import Grid
 from minigrid.core.mission import MissionSpace
 from minigrid.core.world_object import Wall, Goal  # , Door, Key #TODO
 from minigrid.minigrid_env import MiniGridEnv
+import numpy as np
 # from minigrid.core.constants import COLOR_NAMES # Used for doors and keys
 
 
@@ -47,25 +48,22 @@ class MazeEnv(MiniGridEnv):
         max_steps: int | None = None,
         **kwargs,
     ):
+        mission_space = MissionSpace(mission_func=self._gen_mission)
+        super().__init__(mission_space, grid_size=width)
         self.agent_start_pos = agent_start_pos
         self.agent_start_dir = agent_start_dir
-
-        mission_space = MissionSpace(mission_func=self._gen_mission)
 
         if max_steps is None:
             max_steps = 4 * width * height
 
-        super().__init__(
-            mission_space=mission_space,
-            width=width,
-            height=height,
-            # Set this to True for maximum speed
-            see_through_walls=True,
-            max_steps=max_steps,
-            # World is fully observable. Don't highlight the agent's field of view for renders
-            highlight=False,
-            **kwargs,
-        )
+        self.mission_space = (mission_space,)
+        self.width = width
+        self.height = height
+        # Set this to True for maximum speed
+        self.see_through_walls = True
+        self.max_steps = max_steps
+        # World is fully observable. Don't highlight the agent's field of view for renders
+        self.highlight = (False,)
 
     @staticmethod
     def _gen_mission():
@@ -87,6 +85,13 @@ class MazeEnv(MiniGridEnv):
             height (int): Height of the maze in corridors (excluding walls)
         """
         # Generate Maze using the mazelib package
+
+        # self.width is passed but we need to reduce it to account for the walls
+        width = (width - 1) // 2
+
+        # self.height is passed but we need to reduce it to account for the walls
+        height = (height - 1) // 2
+
         m = Maze()
         m.generator = DungeonRooms(h0=height, w0=width)  # TODO add options
         m.generate()
@@ -95,8 +100,8 @@ class MazeEnv(MiniGridEnv):
         # As such it adds cells to allow it to fill in cells as walls.
         # e.g. h = h * 2 + 1
         # Create an empty grid
-        self.width = m.grid.shape[0]  # Update the grid size based on the mazelib size
-        self.height = m.grid.shape[1]  # Update the grid size based on the mazelib size
+        # self.width = m.grid.shape[0]  # Update the grid size based on the mazelib size
+        # self.height = m.grid.shape[1]  # Update the grid size based on the mazelib size
         self.grid = Grid(self.width, self.height)
 
         # Mazelib returns an h x w numpy array with 1s representing walls

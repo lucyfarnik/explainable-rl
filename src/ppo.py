@@ -97,7 +97,12 @@ class ReplayBuffer:
             max_episode_len (int): the maximum length of an episode
         """
         with T.no_grad():
-            obs = T.tensor(env.reset()[0], device=agent.device)
+            obs = env.reset()[0]
+            if isinstance(obs, dict) and "image" in obs.keys():
+                image = np.array(obs["image"]).flatten()
+                obs = np.append(image, obs["direction"])
+
+            obs = T.tensor(obs, device=agent.device, dtype=T.float32)
             done = 0
             current_episode_len = 0
             for step in range(self.size):
