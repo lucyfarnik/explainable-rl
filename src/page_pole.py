@@ -1,5 +1,6 @@
 """The Pole Balancing page of the Streamlit app."""
 import altair as alt
+import codecarbon
 import gymnasium as gym
 from math import degrees
 import pandas as pd
@@ -35,6 +36,16 @@ PARAMETERS = [
 ]
 
 
+@st.cache_resource
+def get_carbon_tracker():
+    return codecarbon.EmissionsTracker()
+
+
+# @st.cache_resource(max_entries=1)
+# def train_and_cache_agent(iterations: int, _env: gym.Env):
+#     return train_agent(env=_env, n_timesteps=iterations)
+
+
 def page_pole():
     """Renders the Pole Balancing page."""
     # Initialise Session State
@@ -50,6 +61,15 @@ def page_pole():
 
     # Training Section
     st.header("Training")
+    st.slider(
+        label="Training iterations",
+        min_value=10,
+        max_value=22,
+        value=16,
+        step=1,
+        key="training_iterations",
+        format="2^" + "%d",
+    )
     train_button_col, train_result_col = st.columns([1, 4])
     with train_button_col:
         if st.button(
@@ -90,11 +110,20 @@ def page_pole():
                 )
 
                 # Train agent
+                carbon_tracker = get_carbon_tracker()
+                carbon_tracker.start()
+                # st.session_state.pole_agent = train_and_cache_agent(
+                #     iterations=st.session_state.training_iterations, _env=env
+                # )
                 st.session_state.pole_agent = train_agent(env)
+                st.session_state.pole_agent_emissions: float = carbon_tracker.stop()
 
     with train_result_col:
         if st.session_state.pole_agent is not None:
-            st.write(st.session_state.pole_agent)
+            st.markdown(":space_invader: Agent trained successfully!")
+            st.markdown(
+                f":battery: Training this agent produced: ***{st.session_state.pole_agent_emissions:.2e}*** CO2eq kg"
+            )
 
     # Testing
     st.header("Testing")
