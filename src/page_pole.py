@@ -244,6 +244,7 @@ def page_pole():
             max_value=len(episode.steps) - 1,
         )
         step: Step = episode.steps[step_idx]
+        st.write(step.reward)
         render_col, reward_col = st.columns([5, 1])
         with render_col:
             pos, vel, angle, _ = step.obs

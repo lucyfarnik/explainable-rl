@@ -81,3 +81,10 @@ class PoleEnv(CartPoleEnv):
         self.polemass_length = self.masspole * self.length
 
         return super_return
+
+    def step(self, action):
+        state, reward, terminated, _, _ = super().step(action)
+
+        reward = ((5 - abs(state[0])) / 5 + (0.5 - abs(state[2])) / 0.5) / 2
+
+        return state, reward, terminated, False, {}
