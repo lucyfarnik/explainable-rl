@@ -18,10 +18,6 @@ __pycache__/
 
 # Docs
 docs/_build/
-docs/_static/
-docs/_templates/
-docs/*.bat
-docs/Makefile
 
 
 videos/*
