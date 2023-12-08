@@ -1,4 +1,5 @@
 """The Pole Balancing page of the Streamlit app."""
+from time import sleep
 import altair as alt
 import codecarbon
 import gymnasium as gym
@@ -46,12 +47,19 @@ def get_carbon_tracker():
 #     return train_agent(env=_env, n_timesteps=iterations)
 
 
+def handle_play_button():
+    st.session_state.play = not st.session_state.play
+
+
 def page_pole():
     """Renders the Pole Balancing page."""
     # Initialise Session State
     for key in ["pole_agent", "pole_test_episodes"]:
         if key not in st.session_state:
             st.session_state[key] = None
+
+    if "play" not in st.session_state:
+        st.session_state.play = False
 
     # Page Title
     st.title("Pole Balancing")
@@ -71,59 +79,57 @@ def page_pole():
         format="2^" + "%d",
     )
     train_button_col, train_result_col = st.columns([1, 4])
-    with train_button_col:
-        if st.button(
-            label="Train Agent"
-            if st.session_state.pole_agent is None
-            else "Re-train Agent",
-            key="train_button",
-            help="Train an agent with the current settings.",
-        ):
-            with st.spinner(
-                "Training agent with your environment parameters..."
-            ):  # TODO cache.
-                # Delete previous agent and associated data
-                for key in ["pole_agent", "pole_test_episodes"]:
-                    st.session_state[key] = None
-                # Make environment
-                env = PoleEnv(
-                    gravity=(
-                        st.session_state.gravity_train_mean,
-                        st.session_state.gravity_train_std_dev,
-                    ),
-                    mass_cart=(
-                        st.session_state.cart_mass_train_mean,
-                        st.session_state.cart_mass_train_std_dev,
-                    ),
-                    mass_pole=(
-                        st.session_state.pole_mass_train_mean,
-                        st.session_state.pole_mass_train_std_dev,
-                    ),
-                    length=(
-                        st.session_state.length_train_mean,
-                        st.session_state.length_train_std_dev,
-                    ),
-                    force_mag=(
-                        st.session_state.force_magnitude_train_mean,
-                        st.session_state.force_magnitude_train_std_dev,
-                    ),
-                )
-
-                # Train agent
-                carbon_tracker = get_carbon_tracker()
-                carbon_tracker.start()
-                # st.session_state.pole_agent = train_and_cache_agent(
-                #     iterations=st.session_state.training_iterations, _env=env
-                # )
-                st.session_state.pole_agent = train_agent(env)
-                st.session_state.pole_agent_emissions: float = carbon_tracker.stop()
-
-    with train_result_col:
-        if st.session_state.pole_agent is not None:
-            st.markdown(":space_invader: Agent trained successfully!")
-            st.markdown(
-                f":battery: Training this agent produced: ***{st.session_state.pole_agent_emissions:.2e}*** CO2eq kg"
+    if st.button(
+        label="Train Agent"
+        if st.session_state.pole_agent is None
+        else "Re-train Agent",
+        key="train_button",
+        help="Train an agent with the current settings.",
+    ):
+        with st.spinner(
+            "Training agent with your environment parameters..."
+        ):  # TODO cache.
+            # Delete previous agent and associated data
+            for key in ["pole_agent", "pole_test_episodes"]:
+                st.session_state[key] = None
+            # Make environment
+            env = PoleEnv(
+                gravity=(
+                    st.session_state.gravity_train_mean,
+                    st.session_state.gravity_train_std_dev,
+                ),
+                mass_cart=(
+                    st.session_state.cart_mass_train_mean,
+                    st.session_state.cart_mass_train_std_dev,
+                ),
+                mass_pole=(
+                    st.session_state.pole_mass_train_mean,
+                    st.session_state.pole_mass_train_std_dev,
+                ),
+                length=(
+                    st.session_state.length_train_mean,
+                    st.session_state.length_train_std_dev,
+                ),
+                force_mag=(
+                    st.session_state.force_magnitude_train_mean,
+                    st.session_state.force_magnitude_train_std_dev,
+                ),
             )
+
+            # Train agent
+            carbon_tracker = get_carbon_tracker()
+            carbon_tracker.start()
+            # st.session_state.pole_agent = train_and_cache_agent(
+            #     iterations=st.session_state.training_iterations, _env=env
+            # )
+            st.session_state.pole_agent = train_agent(env)
+            st.session_state.pole_agent_emissions: float = carbon_tracker.stop()
+
+    if st.session_state.pole_agent is not None:
+        st.markdown(":space_invader: Agent trained successfully!")
+        st.markdown(
+            f":battery: Training this agent produced: ***{st.session_state.pole_agent_emissions:.2e}*** CO2eq kg"
+        )
 
     # Testing
     st.header("Testing")
@@ -187,22 +193,6 @@ def page_pole():
                     break
             st.session_state.pole_test_episodes.append(episode)
 
-    # TODO move into components >>>
-    # if "play" not in st.session_state:
-    #     st.session_state.play = False
-
-    # def handle_play_button():
-    #     st.session_state.play = not st.session_state.play
-
-    # Start/Button
-    # st.button(
-    #     label=("Stop" if st.session_state.play else "Play"),
-    #     key="play_button",
-    #     help="Press to stop and start the animation",
-    #     on_click=handle_play_button,
-    # )
-    # <<<<
-
     # # Display environment
     # if st.session_state["play"]:
     #     with st.empty():
@@ -238,26 +228,64 @@ def page_pole():
         param_df = pd.DataFrame.from_records([episode.parameters])
         st.write(param_df)
 
-        step_idx = st.slider(
-            "Select step",
-            min_value=0,
-            max_value=len(episode.steps) - 1,
-        )
-        step: Step = episode.steps[step_idx]
-        st.write(step.reward)
+        play_col, scrub_col = st.columns([1, 9])
+        with scrub_col:
+            step_idx = st.slider(
+                "Select step",
+                min_value=0,
+                max_value=len(episode.steps) - 1,
+                disabled=st.session_state.play,
+            )
+            step: Step = episode.steps[step_idx]
+        with play_col:
+            # TODO move into components >>>
+            # Start/Button
+            st.button(
+                label=("Stop" if st.session_state.play else "Play"),
+                key="play_button",
+                help="Press to stop and start the animation",
+                on_click=handle_play_button,
+            )
+            # <<<<
+
         render_col, reward_col = st.columns([5, 1])
         with render_col:
-            pos, vel, angle, _ = step.obs
-            action_text = ":arrow_left:" if step.action == 0 else ":arrow_right:"
-            st.write(
-                f"Position: {pos:.2f} m | Velocity: {vel:.2f} m/s | Angle: {degrees(angle):.1f}° || Action: {action_text}"
-            )
-            image = step.render
-            st.image(
-                image=image,
-                caption="Pole World",
-                use_column_width=True,
-            )
+            if st.session_state.play:
+                step_idx = 0
+                with st.empty():
+                    while True:
+                        sleep(0.02)
+                        if step_idx >= len(episode.steps):
+                            step_idx = 0
+                        step = episode.steps[step_idx]
+
+                        # pos, vel, angle, _ = step.obs
+                        # action_text = (
+                        #     ":arrow_left:" if step.action == 0 else ":arrow_right:"
+                        # )
+                        # st.write(
+                        #     f"Position: {pos:.2f} m | Velocity: {vel:.2f} m/s | Angle: {degrees(angle):.1f}° || Action: {action_text}"
+                        # )
+                        image = step.render
+                        st.image(
+                            image=image,
+                            caption="Pole World",
+                            use_column_width=True,
+                        )
+                        step_idx += 1
+
+            else:
+                pos, vel, angle, _ = step.obs
+                action_text = ":arrow_left:" if step.action == 0 else ":arrow_right:"
+                st.write(
+                    f"Position: {pos:.2f} m | Velocity: {vel:.2f} m/s | Angle: {degrees(angle):.1f}° || Action: {action_text}"
+                )
+                image = step.render
+                st.image(
+                    image=image,
+                    caption="Pole World",
+                    use_column_width=True,
+                )
         with reward_col:
             c = (
                 alt.Chart(pd.DataFrame({"Reward": [step.reward]}))
