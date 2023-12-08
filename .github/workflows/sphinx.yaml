@@ -1,4 +1,4 @@
-name: build_and_publish_sphinx_docs
+name: Build and Publish Sphinx Docs
 
 on:
   push:
