@@ -1,4 +1,4 @@
-name: build_and_publish_sphinx_docs
+name: Build and Publish Sphinx Docs
 
 on:
   push:
@@ -19,14 +19,16 @@ jobs:
           with:
             python-version: '3.10'
         - name: Install Sphinx, themes, and ghp-import
-          run: python -m pip install sphinx sphinx-rtd-theme ghp-import
+          run: pip install sphinx sphinx-rtd-theme ghp-import
         - name: Build Docs
           run: |
             cd docs
             make html
             cd ..
+        # Use the ghp-import package to automaticaly push the docs to the gh-pages branch
+        # ghp-import moves the built html files to the root of the gh-pages branch, creates a
+        # .nojekyll file, and pushes the changes to the remote gh-pages branch
         - name: Run ghp-import
-          run:
-            gph-import -n -p -f docs/_build/html
+          run: ghp-import --no-jekyll --push --force --no-history docs/_build/html
 
             
